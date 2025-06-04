@@ -37,13 +37,8 @@ function animateRevealParagraph(className: string) {
     const splitText = new SplitText(paragraph, { type: 'words' });
     const { words } = splitText;
 
-    const COLORS = {
-      from: 'var(--text-color--text-alternate)',
-      to: 'var(--text-color--text-secondary)',
-    };
-
-    gsap.set(words, { color: COLORS.from });
-    gsap.set(paragraph, { color: COLORS.from });
+    gsap.set(words, { opacity: 0.1 });
+    gsap.set(paragraph, { opacity: 1 });
 
     const tl = gsap.timeline({
       scrollTrigger: {
@@ -54,7 +49,7 @@ function animateRevealParagraph(className: string) {
     });
 
     words.forEach((word) => {
-      tl.to(word, { color: COLORS.to, duration: 0 }, '<0.1');
+      tl.to(word, { opacity: 1, duration: 0.5 }, '<0.1');
     });
   });
 }
