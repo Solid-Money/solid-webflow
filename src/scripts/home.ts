@@ -43,7 +43,7 @@ function animateRevealParagraph(className: string) {
     const tl = gsap.timeline({
       scrollTrigger: {
         trigger: paragraph,
-        start: 'top 50%',
+        start: 'top 80%',
         end: 'bottom 20%',
       },
     });
