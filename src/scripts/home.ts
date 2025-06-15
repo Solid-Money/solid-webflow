@@ -18,7 +18,7 @@ function animateHeroContent(className: string) {
   gsap.to(content, {
     scrollTrigger: {
       trigger: content,
-      start: 'top 20%',
+      start: 'top 10%',
     },
     opacity: 0,
     scale: 0,
