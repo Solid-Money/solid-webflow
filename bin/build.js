@@ -10,6 +10,7 @@ const PRODUCTION = process.env.NODE_ENV === 'production';
 const SCRIPT_DIR = 'src/scripts';
 const SCRIPTS = [
   'home.ts',
+  'invite.ts',
 ]
 const ENTRY_POINTS = SCRIPTS.map((script) => `${SCRIPT_DIR}/${script}`);
 
