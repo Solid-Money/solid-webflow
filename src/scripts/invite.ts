@@ -1,4 +1,5 @@
-import { safeExecute } from '@utils/helpers';
+import { BASE_URL, safeExecute } from '@utils/helpers';
+import type { WaitlistUser } from '@utils/types';
 
 function copyToClipboard(className: string) {
   const container = document.querySelector(className);
@@ -22,7 +23,45 @@ function copyToClipboard(className: string) {
   });
 }
 
+
+async function getWaitlistUser(email: string): Promise<WaitlistUser | null> {
+  try {
+    const response = await fetch(`${BASE_URL.waitlist}/waitlist/v1/waitlist/user?email=${email}`);
+
+    if (!response.ok) {
+      throw new Error(`API call failed: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching waitlist user:', error);
+    return null;
+  }
+}
+
+async function updateWaitlistInfo() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const email = urlParams.get('email');
+  if (!email) return;
+
+  const user = await getWaitlistUser(email);
+  if (!user) return;
+
+  const positionElement = document.getElementById('waitlist-position');
+  if (positionElement) {
+    positionElement.textContent = `#${user.position}`;
+  }
+
+  const inviteLinkElement = document.getElementById('invite-link');
+  if (inviteLinkElement) {
+    const inviteUrl = `${window.location.origin}?w=${user.referralCode}`;
+    inviteLinkElement.textContent = inviteUrl;
+  }
+}
+
+
 window.Webflow ||= [];
 window.Webflow.push(() => {
   safeExecute(copyToClipboard, '.invite_waitlist-link');
+  safeExecute(updateWaitlistInfo);
 });
