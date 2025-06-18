@@ -58,62 +58,64 @@ function animateRevealParagraph(className: string) {
 }
 
 function joinWaitlist(className: string) {
-  const webflowForm = document.querySelector(className) as HTMLFormElement;
-  if (!webflowForm) return;
+  const webflowForms = document.querySelectorAll(className) as NodeListOf<HTMLFormElement>;
+  if (!webflowForms) return;
 
-  const form = webflowForm.cloneNode(true) as HTMLFormElement;
-  webflowForm.parentNode?.replaceChild(form, webflowForm);
+  webflowForms.forEach((webflowForm) => {
+    const form = webflowForm.cloneNode(true) as HTMLFormElement;
+    webflowForm.parentNode?.replaceChild(form, webflowForm);
 
-  form.addEventListener('submit', async (event) => {
-    event.preventDefault();
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
 
-    const submitButton = form.querySelector('input[type="submit"]') as HTMLInputElement;
-    if (!submitButton) return;
+      const submitButton = form.querySelector('input[type="submit"]') as HTMLInputElement;
+      if (!submitButton) return;
 
-    try {
-      submitButton.value = 'Joining';
-      submitButton.disabled = true;
+      try {
+        submitButton.value = 'Joining';
+        submitButton.disabled = true;
 
-      const emailField = form.querySelector('input[type="email"]') as HTMLInputElement;
-      if (!emailField) {
-        throw new Error('Email field not found');
+        const emailField = form.querySelector('input[type="email"]') as HTMLInputElement;
+        if (!emailField) {
+          throw new Error('Email field not found');
+        }
+
+        const email = getFormFieldValue(emailField);
+        if (!email) {
+          throw new Error('Email is required');
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const referralCode = urlParams.get('w');
+
+        const body: JoinWaitlistBody = { email };
+        if (referralCode) {
+          body.referralCode = referralCode;
+        }
+
+        const response = await fetch(`${BASE_URL.waitlist}/waitlist/v1/waitlist/join`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(body),
+        });
+
+        if (!response.ok) {
+          throw new Error(`API call failed: ${response.status}`);
+        }
+
+        submitButton.value = 'Joined Waitlist';
+
+        const origin = window.location.origin;
+        const inviteUrl = `${origin}/invite?email=${email}`;
+        window.location.href = inviteUrl;
+      } catch (error) {
+        console.error('Error joining waitlist:', error);
+        submitButton.value = 'Error while joining';
+        submitButton.disabled = false;
       }
-
-      const email = getFormFieldValue(emailField);
-      if (!email) {
-        throw new Error('Email is required');
-      }
-
-      const urlParams = new URLSearchParams(window.location.search);
-      const referralCode = urlParams.get('w');
-
-      const body: JoinWaitlistBody = { email };
-      if (referralCode) {
-        body.referralCode = referralCode;
-      }
-
-      const response = await fetch(`${BASE_URL.waitlist}/waitlist/v1/waitlist/join`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
-      });
-
-      if (!response.ok) {
-        throw new Error(`API call failed: ${response.status}`);
-      }
-
-      submitButton.value = 'Joined Waitlist';
-
-      const origin = window.location.origin;
-      const inviteUrl = `${origin}/invite?email=${email}`;
-      window.location.href = inviteUrl;
-    } catch (error) {
-      console.error('Error joining waitlist:', error);
-      submitButton.value = 'Error while joining';
-      submitButton.disabled = false;
-    }
+    });
   });
 }
 
@@ -122,5 +124,5 @@ window.Webflow.push(() => {
   safeExecute(initGsap);
   safeExecute(animateHeroContent, '.hero_content');
   safeExecute(animateRevealParagraph, '.intro_content p');
-  safeExecute(joinWaitlist, '#wf-form-Waitlist');
+  safeExecute(joinWaitlist, '.form_form.is-waitlist');
 });
