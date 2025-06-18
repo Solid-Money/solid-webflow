@@ -1,4 +1,4 @@
-import { getFormFieldValue } from '@finsweet/ts-utils';
+import { FORM_CSS_CLASSES, getFormFieldValue } from '@finsweet/ts-utils';
 import gsap from 'gsap';
 import { ScrollTrigger, SplitText } from 'gsap/all';
 
@@ -105,11 +105,11 @@ function joinWaitlist(className: string) {
           throw new Error(`API call failed: ${response.status}`);
         }
 
-        submitButton.value = 'Joined Waitlist';
+        const successMessage = form.parentElement?.querySelector(`.${FORM_CSS_CLASSES.successMessage}`) as HTMLElement;
+        if (!successMessage) return;
 
-        const origin = window.location.origin;
-        const inviteUrl = `${origin}/invite?email=${email}`;
-        window.location.href = inviteUrl;
+        form.style.display = 'none';
+        successMessage.style.display = 'block';
       } catch (error) {
         console.error('Error joining waitlist:', error);
         submitButton.value = 'Error while joining';
