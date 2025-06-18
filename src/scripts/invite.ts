@@ -52,6 +52,11 @@ async function updateWaitlistInfo() {
     positionElement.textContent = `#${user.position}`;
   }
 
+  const nextPositionElement = document.getElementById('waitlist-next-position');
+  if (nextPositionElement) {
+    nextPositionElement.textContent = `#${user.nextPosition}`;
+  }
+
   const inviteLinkElement = document.getElementById('invite-link');
   if (inviteLinkElement) {
     const inviteUrl = `${window.location.origin}?w=${user.referralCode}`;

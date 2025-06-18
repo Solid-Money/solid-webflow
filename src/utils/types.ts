@@ -6,4 +6,5 @@ export type JoinWaitlistBody = {
 export interface WaitlistUser {
   referralCode: string;
   position: number;
+  nextPosition: number;
 }
