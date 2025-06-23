@@ -101,6 +101,11 @@ function joinWaitlist(className: string) {
           body: JSON.stringify(body),
         });
 
+        if (response.status === 409) {
+          window.location.href = `${window.location.origin}/invite?email=${email}`;
+          return;
+        }
+
         if (!response.ok) {
           throw new Error(`API call failed: ${response.status}`);
         }
