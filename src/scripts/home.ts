@@ -102,7 +102,7 @@ function joinWaitlist(className: string) {
         const data = await response.json();
 
         if (response.status === 409) {
-          window.location.href = `${window.location.origin}/invite?id=${data._id}`;
+          window.location.href = `${window.location.origin}/invite?id=${data.data._id}`;
           return;
         }
 
