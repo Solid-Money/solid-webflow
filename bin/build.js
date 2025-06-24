@@ -11,8 +11,17 @@ const SCRIPT_DIR = 'src/scripts';
 const SCRIPTS = [
   'home.ts',
   'invite.ts',
-]
-const ENTRY_POINTS = SCRIPTS.map((script) => `${SCRIPT_DIR}/${script}`);
+];
+
+const STYLE_DIR = 'src/styles';
+const STYLES = [
+  'invite.css',
+];
+
+const ENTRY_POINTS = [
+  ...SCRIPTS.map((script) => `${SCRIPT_DIR}/${script}`),
+  ...STYLES.map((style) => `${STYLE_DIR}/${style}`),
+];
 
 // Config dev serving
 const LIVE_RELOAD = !PRODUCTION;

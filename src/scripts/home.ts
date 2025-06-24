@@ -1,9 +1,8 @@
 import { FORM_CSS_CLASSES, getFormFieldValue } from '@finsweet/ts-utils';
-import gsap from 'gsap';
-import { ScrollTrigger, SplitText } from 'gsap/all';
-
 import { BASE_URL, safeExecute } from '@utils/helpers';
 import type { JoinWaitlistBody } from '@utils/types';
+import gsap from 'gsap';
+import { ScrollTrigger, SplitText } from 'gsap/all';
 
 function initGsap() {
   gsap.registerPlugin(SplitText, ScrollTrigger);
@@ -100,9 +99,10 @@ function joinWaitlist(className: string) {
           },
           body: JSON.stringify(body),
         });
+        const data = await response.json();
 
         if (response.status === 409) {
-          window.location.href = `${window.location.origin}/invite?email=${email}`;
+          window.location.href = `${window.location.origin}/invite?id=${data._id}`;
           return;
         }
 
@@ -110,7 +110,9 @@ function joinWaitlist(className: string) {
           throw new Error(`API call failed: ${response.status}`);
         }
 
-        const successMessage = form.parentElement?.querySelector(`.${FORM_CSS_CLASSES.successMessage}`) as HTMLElement;
+        const successMessage = form.parentElement?.querySelector(
+          `.${FORM_CSS_CLASSES.successMessage}`
+        ) as HTMLElement;
         if (!successMessage) return;
 
         form.style.display = 'none';

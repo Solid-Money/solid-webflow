@@ -53,6 +53,7 @@
   },
   "dependencies": {
     "@finsweet/ts-utils": "^0.40.0",
+    "@tsparticles/confetti": "^3.8.1",
     "gsap": "^3.13.0"
   },
   "engines": {

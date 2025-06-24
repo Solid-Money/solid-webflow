@@ -1,3 +1,4 @@
+import { confetti } from '@tsparticles/confetti';
 import { BASE_URL, safeExecute } from '@utils/helpers';
 import type { WaitlistUser } from '@utils/types';
 
@@ -23,10 +24,9 @@ function copyToClipboard(className: string) {
   });
 }
 
-
-async function getWaitlistUser(email: string): Promise<WaitlistUser | null> {
+async function getWaitlistUser(id: string): Promise<WaitlistUser | null> {
   try {
-    const response = await fetch(`${BASE_URL.waitlist}/waitlist/v1/waitlist/user?email=${email}`);
+    const response = await fetch(`${BASE_URL.waitlist}/waitlist/v1/waitlist/user?id=${id}`);
 
     if (!response.ok) {
       throw new Error(`API call failed: ${response.status}`);
@@ -41,10 +41,10 @@ async function getWaitlistUser(email: string): Promise<WaitlistUser | null> {
 
 async function updateWaitlistInfo() {
   const urlParams = new URLSearchParams(window.location.search);
-  const email = urlParams.get('email');
-  if (!email) return;
+  const id = urlParams.get('id');
+  if (!id) return;
 
-  const user = await getWaitlistUser(email);
+  const user = await getWaitlistUser(id);
   if (!user) return;
 
   const positionElement = document.getElementById('waitlist-position');
@@ -64,9 +64,36 @@ async function updateWaitlistInfo() {
   }
 }
 
+function animateConfetti() {
+  const duration = 1 * 1000;
+  const animationEnd = Date.now() + duration;
+
+  (function frame() {
+    const timeLeft = animationEnd - Date.now();
+
+    confetti({
+      count: 1,
+      startVelocity: 100,
+      ticks: 0,
+      origin: {
+        x: Math.random(),
+        y: 0,
+      },
+      colors: ['#94F27F'],
+      shapes: ['circle', 'square', 'polygon', 'heart', 'hearts', 'spades', 'clubs', 'diamonds'],
+      gravity: 15,
+      scalar: 3,
+    });
+
+    if (timeLeft > 0) {
+      requestAnimationFrame(frame);
+    }
+  })();
+}
 
 window.Webflow ||= [];
 window.Webflow.push(() => {
   safeExecute(copyToClipboard, '.invite_waitlist-link');
   safeExecute(updateWaitlistInfo);
+  safeExecute(animateConfetti);
 });
