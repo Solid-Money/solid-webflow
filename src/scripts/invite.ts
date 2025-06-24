@@ -73,7 +73,6 @@ function animateConfetti() {
 
     confetti({
       count: 1,
-      startVelocity: 100,
       ticks: 0,
       origin: {
         x: Math.random(),
@@ -81,7 +80,7 @@ function animateConfetti() {
       },
       colors: ['#94F27F'],
       shapes: ['circle', 'square', 'polygon', 'heart', 'hearts', 'spades', 'clubs', 'diamonds'],
-      gravity: 15,
+      gravity: 8,
       scalar: 3,
     });
 
