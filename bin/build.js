@@ -15,6 +15,7 @@ const SCRIPTS = [
 
 const STYLE_DIR = 'src/styles';
 const STYLES = [
+  'home.css',
   'invite.css',
 ];
 
