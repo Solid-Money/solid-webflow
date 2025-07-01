@@ -9,7 +9,7 @@ export function safeExecute<T, Args extends unknown[]>(
   }
 }
 
-export const isProduction = window.location.hostname === 'solid.xyz';
+export const isProduction = window.location.hostname.includes('solid.xyz');
 
 export const BASE_URL = {
   waitlist: isProduction ? 'https://waitlist.solid.xyz' : 'https://waitlist-qa.solid.xyz',
