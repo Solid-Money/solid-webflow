@@ -13,4 +13,5 @@ export const isProduction = window.location.hostname.includes('solid.xyz');
 
 export const BASE_URL = {
   waitlist: isProduction ? 'https://waitlist.solid.xyz' : 'https://waitlist-qa.solid.xyz',
+  analytics: isProduction ? 'https://analytics.solid.xyz' : 'https://analytics-qa.solid.xyz',
 };

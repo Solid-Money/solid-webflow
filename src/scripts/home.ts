@@ -126,10 +126,21 @@ function joinWaitlist(className: string) {
   });
 }
 
+async function fetchTotalApy(className: string) {
+  const totalApyElement = document.querySelector(className) as HTMLElement;
+  if (!totalApyElement) return;
+
+  const response = await fetch(`${BASE_URL.analytics}/analytics/v1/yields/total-apy`);
+  const data = await response.json();
+
+  totalApyElement.innerHTML = `${data.toFixed(2)}%`;
+}
+
 window.Webflow ||= [];
 window.Webflow.push(() => {
   safeExecute(initGsap);
   safeExecute(animateHeroContent, '.hero_content');
   safeExecute(animateRevealParagraph, '.intro_content p');
   safeExecute(joinWaitlist, '.form_form.is-waitlist');
+  safeExecute(fetchTotalApy, '#total-apy');
 });
