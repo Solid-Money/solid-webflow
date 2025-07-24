@@ -1,3 +1,7 @@
+declare global {
+  function twq(event: string, eventId: string, params?: { email_address?: string | null }): void;
+}
+
 export type JoinWaitlistBody = {
   email: string;
   referralCode?: string;

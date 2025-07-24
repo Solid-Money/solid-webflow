@@ -56,6 +56,12 @@ function animateRevealParagraph(className: string) {
   });
 }
 
+function trackWaitlistJoin(email: string) {
+  twq('event', 'tw-q5qho-q5qhp', {
+    email_address: email
+  });
+}
+
 function joinWaitlist(className: string) {
   const webflowForms = document.querySelectorAll(className) as NodeListOf<HTMLFormElement>;
   if (!webflowForms) return;
@@ -117,6 +123,7 @@ function joinWaitlist(className: string) {
 
         form.style.display = 'none';
         successMessage.style.display = 'block';
+        safeExecute(trackWaitlistJoin, email);
       } catch (error) {
         console.error('Error joining waitlist:', error);
         submitButton.value = 'Error while joining';
