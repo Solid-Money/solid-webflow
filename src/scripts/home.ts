@@ -107,23 +107,12 @@ function joinWaitlist(className: string) {
         });
         const data = await response.json();
 
-        if (response.status === 409) {
-          window.location.href = `${window.location.origin}/invite?id=${data.data._id}`;
-          return;
-        }
-
-        if (!response.ok) {
+        if (!response.ok && response.status !== 409) {
           throw new Error(`API call failed: ${response.status}`);
         }
 
-        const successMessage = form.parentElement?.querySelector(
-          `.${FORM_CSS_CLASSES.successMessage}`
-        ) as HTMLElement;
-        if (!successMessage) return;
-
-        form.style.display = 'none';
-        successMessage.style.display = 'block';
         safeExecute(trackWaitlistJoin, email);
+        window.location.href = `${window.location.origin}/invite?id=${data.data._id}`;
       } catch (error) {
         console.error('Error joining waitlist:', error);
         submitButton.value = 'Error while joining';
