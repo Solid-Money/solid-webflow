@@ -1,8 +1,13 @@
-import { FORM_CSS_CLASSES, getFormFieldValue } from '@finsweet/ts-utils';
+import 'tippy.js/dist/tippy.css';
+import 'tippy.js/themes/light.css';
+import 'tippy.js/animations/scale.css';
+
+import { getFormFieldValue } from '@finsweet/ts-utils';
 import { BASE_URL, safeExecute } from '@utils/helpers';
 import type { JoinWaitlistBody } from '@utils/types';
 import gsap from 'gsap';
 import { ScrollTrigger, SplitText } from 'gsap/all';
+import tippy from 'tippy.js';
 
 function initGsap() {
   gsap.registerPlugin(SplitText, ScrollTrigger);
@@ -58,7 +63,7 @@ function animateRevealParagraph(className: string) {
 
 function trackWaitlistJoin(email: string) {
   twq('event', 'tw-q5qho-q5qhp', {
-    email_address: email
+    email_address: email,
   });
 }
 
@@ -132,6 +137,13 @@ async function fetchTotalApy(className: string) {
   totalApyElement.innerHTML = `${data.toFixed(2)}%`;
 }
 
+function initTippy() {
+  tippy('[data-tippy-content]', {
+    theme: 'light',
+    animation: 'scale',
+  });
+}
+
 window.Webflow ||= [];
 window.Webflow.push(() => {
   safeExecute(initGsap);
@@ -139,4 +151,5 @@ window.Webflow.push(() => {
   safeExecute(animateRevealParagraph, '.intro_content p');
   safeExecute(joinWaitlist, '.form_form.is-waitlist');
   safeExecute(fetchTotalApy, '#total-apy');
+  safeExecute(initTippy);
 });
