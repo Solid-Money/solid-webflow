@@ -5,3 +5,11 @@ input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
   transition-delay: 99999s;
 }
+
+.swiper.is-partner {
+  mask-image: linear-gradient(to right, transparent 0%, white 10%, white 90%, transparent 100%);
+}
+
+.swiper-wrapper.is-partner {
+  transition-timing-function: linear;
+}
