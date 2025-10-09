@@ -20,5 +20,5 @@ input:-webkit-autofill:active {
 }
 
 .swiper-wrapper.is-partner {
-  animation: 10s swiperSlide infinite linear;
+  animation: 20s swiperSlide infinite linear;
 }
