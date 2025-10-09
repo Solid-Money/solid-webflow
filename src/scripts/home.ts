@@ -1,16 +1,12 @@
 import 'tippy.js/dist/tippy.css';
 import 'tippy.js/themes/light.css';
 import 'tippy.js/animations/scale.css';
-import 'swiper/css';
-import 'swiper/css/autoplay';
 
 import { getFormFieldValue } from '@finsweet/ts-utils';
 import { BASE_URL, safeExecute } from '@utils/helpers';
 import type { JoinWaitlistBody } from '@utils/types';
 import gsap from 'gsap';
 import { ScrollTrigger, SplitText } from 'gsap/all';
-import Swiper from 'swiper';
-import { Autoplay } from 'swiper/modules';
 import tippy from 'tippy.js';
 
 function initGsap() {
@@ -148,34 +144,6 @@ function initTippy() {
   });
 }
 
-function initSwiperInfiniteLogos(className: string) {
-  const swiperElement = document.querySelector(`.swiper${className}`);
-  if (!swiperElement) return;
-
-  const wrapper = swiperElement.querySelector(`.swiper-wrapper${className}`);
-  if (!wrapper) return;
-
-  // Duplicate children to get more slides
-  const children = Array.from(wrapper.children);
-  children.forEach((child) => {
-    const clone = child.cloneNode(true);
-    wrapper.appendChild(clone);
-  });
-
-  new Swiper(`.swiper${className}`, {
-    spaceBetween: 40,
-    speed: 6000,
-    loop: true,
-    slidesPerView: 'auto',
-    allowTouchMove: false,
-    autoplay: {
-      delay: 0,
-      disableOnInteraction: false,
-    },
-    modules: [Autoplay],
-  });
-}
-
 window.Webflow ||= [];
 window.Webflow.push(() => {
   safeExecute(initGsap);
@@ -184,5 +152,4 @@ window.Webflow.push(() => {
   safeExecute(joinWaitlist, '.form_form.is-waitlist');
   safeExecute(fetchTotalApy, '#total-apy');
   safeExecute(initTippy);
-  safeExecute(initSwiperInfiniteLogos, '.is-partner');
 });

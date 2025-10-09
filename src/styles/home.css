@@ -6,10 +6,19 @@ input:-webkit-autofill:active {
   transition-delay: 99999s;
 }
 
+@keyframes swiperSlide {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
 .swiper.is-partner {
   mask-image: linear-gradient(to right, transparent 0%, white 10%, white 90%, transparent 100%);
 }
 
 .swiper-wrapper.is-partner {
-  transition-timing-function: linear;
+  animation: 10s swiperSlide infinite linear;
 }
