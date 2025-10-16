@@ -4,7 +4,7 @@ import 'tippy.js/animations/scale.css';
 
 import { getFormFieldValue } from '@finsweet/ts-utils';
 import { BASE_URL, safeExecute } from '@utils/helpers';
-import type { JoinWaitlistBody } from '@utils/types';
+import type { APYs, JoinWaitlistBody } from '@utils/types';
 import gsap from 'gsap';
 import { ScrollTrigger, SplitText } from 'gsap/all';
 import tippy from 'tippy.js';
@@ -131,10 +131,10 @@ async function fetchTotalApy(className: string) {
   const totalApyElement = document.querySelector(className) as HTMLElement;
   if (!totalApyElement) return;
 
-  const response = await fetch(`${BASE_URL.analytics}/analytics/v1/yields/total-apy`);
-  const data = await response.json();
+  const response = await fetch(`${BASE_URL.analytics}/analytics/v1/bigquery-metrics/apys`);
+  const data = (await response.json()) as APYs;
 
-  totalApyElement.innerHTML = `${data.toFixed(2)}%`;
+  totalApyElement.innerHTML = `${data.thirtyDay.toFixed(2)}%`;
 }
 
 function initTippy() {

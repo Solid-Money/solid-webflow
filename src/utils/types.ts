@@ -12,3 +12,10 @@ export interface WaitlistUser {
   position: number;
   nextPosition: number;
 }
+
+export interface APYs {
+  allTime: number;
+  sevenDay: number;
+  fifteenDay: number;
+  thirtyDay: number;
+}
