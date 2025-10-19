@@ -11,6 +11,7 @@ const SCRIPT_DIR = 'src/scripts';
 const SCRIPTS = [
   'home.ts',
   'invite.ts',
+  'whats-new.ts',
 ];
 
 const STYLE_DIR = 'src/styles';
