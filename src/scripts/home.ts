@@ -127,14 +127,19 @@ function joinWaitlist(className: string) {
   });
 }
 
-async function fetchTotalApy(className: string) {
-  const totalApyElement = document.querySelector(className) as HTMLElement;
-  if (!totalApyElement) return;
+async function fetchTotalApy(selector: string) {
+  const apyElements = document.querySelectorAll(selector) as NodeListOf<HTMLElement>;
+  if (!apyElements.length) return;
 
   const response = await fetch(`${BASE_URL.analytics}/analytics/v1/bigquery-metrics/apys`);
   const data = (await response.json()) as APYs;
 
-  totalApyElement.innerHTML = `${data.thirtyDay.toFixed(2)}%`;
+  apyElements.forEach((element) => {
+    const apyKey = element.dataset.apy;
+    if (apyKey && apyKey in data) {
+      element.innerHTML = `${data[apyKey as keyof APYs].toFixed(2)}%`;
+    }
+  });
 }
 
 function initTippy() {
@@ -150,6 +155,6 @@ window.Webflow.push(() => {
   safeExecute(animateHeroContent, '.hero_content');
   safeExecute(animateRevealParagraph, '.intro_content p');
   safeExecute(joinWaitlist, '.form_form.is-waitlist');
-  safeExecute(fetchTotalApy, '#total-apy');
+  safeExecute(fetchTotalApy, '[data-apy]');
   safeExecute(initTippy);
 });
