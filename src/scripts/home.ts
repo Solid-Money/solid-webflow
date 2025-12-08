@@ -151,7 +151,9 @@ function initTippy() {
 
 function toggleDetail(selector: string) {
   const details = document.querySelectorAll(`.section_${selector} .${selector}`);
-  const images = document.querySelectorAll(`.section_${selector} .${selector}_image`) as NodeListOf<HTMLElement>;
+  const images = document.querySelectorAll(
+    `.section_${selector} .${selector}_image`
+  ) as NodeListOf<HTMLElement>;
 
   if (!details.length) return;
 
@@ -187,26 +189,28 @@ function toggleDetail(selector: string) {
       const exitingY = isMovingDown ? -50 : 50;
       const enteringY = isMovingDown ? 50 : -50;
 
-      if (images[exitingImageIndex] && exitingImageIndex !== index) {
-        gsap.to(images[exitingImageIndex], {
-          y: exitingY,
-          opacity: 0,
-          duration: 0.3,
-          ease: 'power2.inOut',
-          onComplete: () => {
-            gsap.set(images[exitingImageIndex], { visibility: 'hidden' });
-          },
-        });
-      }
+      if (images.length === details.length) {
+        if (images[exitingImageIndex] && exitingImageIndex !== index) {
+          gsap.to(images[exitingImageIndex], {
+            y: exitingY,
+            opacity: 0,
+            duration: 0.3,
+            ease: 'power2.inOut',
+            onComplete: () => {
+              gsap.set(images[exitingImageIndex], { visibility: 'hidden' });
+            },
+          });
+        }
 
-      if (images[index] && exitingImageIndex !== index) {
-        gsap.set(images[index], { visibility: 'visible', y: enteringY, opacity: 0 });
-        gsap.to(images[index], {
-          y: 0,
-          opacity: 1,
-          duration: 0.3,
-          ease: 'power2.inOut',
-        });
+        if (images[index] && exitingImageIndex !== index) {
+          gsap.set(images[index], { visibility: 'visible', y: enteringY, opacity: 0 });
+          gsap.to(images[index], {
+            y: 0,
+            opacity: 1,
+            duration: 0.3,
+            ease: 'power2.inOut',
+          });
+        }
       }
 
       currentImageIndex = index;
