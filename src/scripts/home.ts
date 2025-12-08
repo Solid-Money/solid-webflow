@@ -150,8 +150,8 @@ function initTippy() {
 }
 
 function toggleDetail(selector: string) {
-  const details = document.querySelectorAll(`.${selector}`);
-  const images = document.querySelectorAll(`.wallet_image`) as NodeListOf<HTMLElement>;
+  const details = document.querySelectorAll(`.section_${selector} .${selector}`);
+  const images = document.querySelectorAll(`.section_${selector} .${selector}_image`) as NodeListOf<HTMLElement>;
 
   if (!details.length) return;
 
