@@ -149,6 +149,68 @@ function initTippy() {
   });
 }
 
+function toggleDetail(selector: string) {
+  const details = document.querySelectorAll(`.${selector}`);
+
+  if (!details.length) return;
+
+  details.forEach((detail, index) => {
+    const allChildren = Array.from(detail.children) as HTMLElement[];
+    const originalGap = window.getComputedStyle(detail).gap || '1rem';
+
+    if (index !== 0) {
+      gsap.set(detail, { gap: '0' });
+      allChildren.forEach((child) => {
+        if (!child.classList.contains(`${selector}_title`)) {
+          gsap.set(child, {
+            height: 0,
+            opacity: 0,
+            overflow: 'hidden',
+          });
+        }
+      });
+    }
+
+    detail.addEventListener('click', () => {
+      details.forEach((otherDetail, otherIndex) => {
+        const otherChildren = Array.from(otherDetail.children) as HTMLElement[];
+
+        if (otherIndex === index) {
+          gsap.to(otherDetail, {
+            gap: originalGap,
+            duration: 0.3,
+            ease: 'power2.inOut',
+          });
+          otherChildren.forEach((child) => {
+            gsap.to(child, {
+              height: 'auto',
+              opacity: 1,
+              duration: 0.3,
+              ease: 'power2.inOut',
+            });
+          });
+        } else {
+          gsap.to(otherDetail, {
+            gap: '0',
+            duration: 0.3,
+            ease: 'power2.inOut',
+          });
+          otherChildren.forEach((child) => {
+            if (!child.classList.contains(`${selector}_title`)) {
+              gsap.to(child, {
+                height: 0,
+                opacity: 0,
+                duration: 0.3,
+                ease: 'power2.inOut',
+              });
+            }
+          });
+        }
+      });
+    });
+  });
+}
+
 window.Webflow ||= [];
 window.Webflow.push(() => {
   safeExecute(initGsap);
@@ -157,4 +219,6 @@ window.Webflow.push(() => {
   safeExecute(joinWaitlist, '.form_form.is-waitlist');
   safeExecute(fetchTotalApy, '[data-apy]');
   safeExecute(initTippy);
+  safeExecute(toggleDetail, 'earn');
+  safeExecute(toggleDetail, 'wallet');
 });
