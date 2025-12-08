@@ -151,8 +151,18 @@ function initTippy() {
 
 function toggleDetail(selector: string) {
   const details = document.querySelectorAll(`.${selector}`);
+  const images = document.querySelectorAll(`.${selector}_image`) as NodeListOf<HTMLElement>;
 
   if (!details.length) return;
+
+  let currentImageIndex = 0;
+  images.forEach((image, imgIndex) => {
+    if (imgIndex === 0) {
+      gsap.set(image, { visibility: 'visible', opacity: 1, y: 0 });
+    } else {
+      gsap.set(image, { visibility: 'hidden', opacity: 0, y: 0 });
+    }
+  });
 
   details.forEach((detail, index) => {
     const allChildren = Array.from(detail.children) as HTMLElement[];
@@ -172,6 +182,35 @@ function toggleDetail(selector: string) {
     }
 
     detail.addEventListener('click', () => {
+      const exitingImageIndex = currentImageIndex;
+      const isMovingDown = exitingImageIndex < index;
+      const exitingY = isMovingDown ? -50 : 50;
+      const enteringY = isMovingDown ? 50 : -50;
+
+      if (images[exitingImageIndex] && exitingImageIndex !== index) {
+        gsap.to(images[exitingImageIndex], {
+          y: exitingY,
+          opacity: 0,
+          duration: 0.3,
+          ease: 'power2.inOut',
+          onComplete: () => {
+            gsap.set(images[exitingImageIndex], { visibility: 'hidden' });
+          },
+        });
+      }
+
+      if (images[index] && exitingImageIndex !== index) {
+        gsap.set(images[index], { visibility: 'visible', y: enteringY, opacity: 0 });
+        gsap.to(images[index], {
+          y: 0,
+          opacity: 1,
+          duration: 0.3,
+          ease: 'power2.inOut',
+        });
+      }
+
+      currentImageIndex = index;
+
       details.forEach((otherDetail, otherIndex) => {
         const otherChildren = Array.from(otherDetail.children) as HTMLElement[];
 
