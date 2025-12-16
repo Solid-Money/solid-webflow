@@ -150,108 +150,178 @@ function initTippy() {
 }
 
 function toggleDetail(selector: string) {
+  const section = document.querySelector(`.section_${selector}`) as HTMLElement;
   const details = document.querySelectorAll(`.section_${selector} .${selector}`);
   const images = document.querySelectorAll(
     `.section_${selector} .${selector}_image`
   ) as NodeListOf<HTMLElement>;
 
-  if (!details.length) return;
+  if (!details.length || !section) return;
 
   let currentImageIndex = 0;
-  images.forEach((image, imgIndex) => {
-    if (imgIndex === 0) {
-      gsap.set(image, { visibility: 'visible', opacity: 1, y: 0 });
-    } else {
-      gsap.set(image, { visibility: 'hidden', opacity: 0, y: 0 });
-    }
+  let isManualClick = false;
+  let autoAdvanceTween: gsap.core.Tween | null = null;
+  const hasImages = images.length === details.length;
+  const animationConfig = { duration: 0.3, ease: 'power2.inOut' as const };
+  const originalGaps = new Map<HTMLElement, string>();
+  const excludedClasses = [`${selector}_title`, 'divider', 'divider-background', 'divider-foreground'];
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const activeDetail = details[currentImageIndex] as HTMLElement;
+          if (activeDetail) {
+            animateDivider(activeDetail, currentImageIndex, details.length);
+          }
+          observer.unobserve(section);
+        }
+      });
+    },
+    { threshold: 0.1 }
+  );
+  observer.observe(section);
+
+  details.forEach((detail) => {
+    const computedGap = window.getComputedStyle(detail as HTMLElement).gap || '1rem';
+    originalGaps.set(detail as HTMLElement, computedGap);
   });
 
-  details.forEach((detail, index) => {
-    const allChildren = Array.from(detail.children) as HTMLElement[];
-    const originalGap = window.getComputedStyle(detail).gap || '1rem';
-
-    if (index !== 0) {
-      gsap.set(detail, { gap: '0' });
-      allChildren.forEach((child) => {
-        if (!child.classList.contains(`${selector}_title`)) {
-          gsap.set(child, {
-            height: 0,
-            opacity: 0,
-            overflow: 'hidden',
-          });
-        }
-      });
-    }
-
-    detail.addEventListener('click', () => {
-      const exitingImageIndex = currentImageIndex;
-      const isMovingDown = exitingImageIndex < index;
-      const exitingY = isMovingDown ? -50 : 50;
-      const enteringY = isMovingDown ? 50 : -50;
-
-      if (images.length === details.length) {
-        if (images[exitingImageIndex] && exitingImageIndex !== index) {
-          gsap.to(images[exitingImageIndex], {
-            y: exitingY,
-            opacity: 0,
-            duration: 0.3,
-            ease: 'power2.inOut',
-            onComplete: () => {
-              gsap.set(images[exitingImageIndex], { visibility: 'hidden' });
-            },
-          });
-        }
-
-        if (images[index] && exitingImageIndex !== index) {
-          gsap.set(images[index], { visibility: 'visible', y: enteringY, opacity: 0 });
-          gsap.to(images[index], {
-            y: 0,
-            opacity: 1,
-            duration: 0.3,
-            ease: 'power2.inOut',
-          });
-        }
-      }
-
-      currentImageIndex = index;
-
-      details.forEach((otherDetail, otherIndex) => {
-        const otherChildren = Array.from(otherDetail.children) as HTMLElement[];
-
-        if (otherIndex === index) {
-          gsap.to(otherDetail, {
-            gap: originalGap,
-            duration: 0.3,
-            ease: 'power2.inOut',
-          });
-          otherChildren.forEach((child) => {
-            gsap.to(child, {
-              height: 'auto',
-              opacity: 1,
-              duration: 0.3,
-              ease: 'power2.inOut',
-            });
-          });
-        } else {
-          gsap.to(otherDetail, {
-            gap: '0',
-            duration: 0.3,
-            ease: 'power2.inOut',
-          });
-          otherChildren.forEach((child) => {
-            if (!child.classList.contains(`${selector}_title`)) {
-              gsap.to(child, {
-                height: 0,
-                opacity: 0,
-                duration: 0.3,
-                ease: 'power2.inOut',
-              });
-            }
-          });
-        }
-      });
+  images.forEach((image, i) => {
+    gsap.set(image, {
+      visibility: i === 0 ? 'visible' : 'hidden',
+      opacity: i === 0 ? 1 : 0,
+      y: 0,
     });
   });
+
+  const transitionImage = (fromIndex: number, toIndex: number) => {
+    if (!hasImages || fromIndex === toIndex) return;
+
+    const isMovingDown = fromIndex < toIndex;
+    const exitingY = isMovingDown ? -50 : 50;
+    const enteringY = isMovingDown ? 50 : -50;
+
+    if (images[fromIndex]) {
+      gsap.to(images[fromIndex], {
+        y: exitingY,
+        opacity: 0,
+        ...animationConfig,
+        onComplete: () => {
+          gsap.set(images[fromIndex], { visibility: 'hidden' });
+        },
+      });
+    }
+
+    if (images[toIndex]) {
+      gsap.set(images[toIndex], { visibility: 'visible', y: enteringY, opacity: 0 });
+      gsap.to(images[toIndex], { y: 0, opacity: 1, ...animationConfig });
+    }
+  };
+
+  const toggleDetailContent = (detail: HTMLElement, isActive: boolean, selector: string) => {
+    const children = Array.from(detail.children) as HTMLElement[];
+    const originalGap = originalGaps.get(detail) || '1rem';
+
+    gsap.to(detail, {
+      gap: isActive ? originalGap : '0',
+      ...animationConfig,
+    });
+
+    children.forEach((child) => {
+      const shouldExclude = excludedClasses.some((className) =>
+        child.classList.contains(className)
+      );
+
+      if (isActive || !shouldExclude) {
+        gsap.to(child, {
+          height: shouldExclude ? undefined : isActive ? 'auto' : 0,
+          opacity: shouldExclude ? undefined : isActive ? 1 : 0,
+          ...animationConfig,
+        });
+      }
+    });
+  };
+
+  const animateDivider = (detail: HTMLElement, index: number, total: number) => {
+    const dividerForeground = detail.querySelector('.divider-foreground') as HTMLElement;
+    if (!dividerForeground) return;
+
+    if (autoAdvanceTween) {
+      autoAdvanceTween.kill();
+      autoAdvanceTween = null;
+    }
+
+    gsap.set(dividerForeground, { width: '0%' });
+
+    if (index < total - 1 && !isManualClick) {
+      autoAdvanceTween = gsap.to(dividerForeground, {
+        width: '100%',
+        duration: 3,
+        ease: 'none',
+        onComplete: () => {
+          if (!isManualClick) {
+            handleDetailToggle(index + 1, false, true);
+          }
+        },
+      });
+    }
+  };
+
+  const handleDetailToggle = (index: number, isClick: boolean = false, startAnimation: boolean = true) => {
+    if (isClick) {
+      isManualClick = true;
+      if (autoAdvanceTween) {
+        autoAdvanceTween.kill();
+        autoAdvanceTween = null;
+      }
+    }
+
+    const exitingIndex = currentImageIndex;
+    transitionImage(exitingIndex, index);
+    currentImageIndex = index;
+
+    details.forEach((detail, i) => {
+      const isActive = i === index;
+      toggleDetailContent(detail as HTMLElement, isActive, selector);
+
+      const dividerForeground = detail.querySelector('.divider-foreground') as HTMLElement;
+      if (dividerForeground) {
+        gsap.set(dividerForeground, { width: isActive ? undefined : '0%' });
+      }
+
+      if (isActive && startAnimation) {
+        animateDivider(detail as HTMLElement, index, details.length);
+      }
+    });
+
+    if (isClick) {
+      isManualClick = false;
+    }
+  };
+
+  details.forEach((detail, index) => {
+    if (index !== 0) {
+      gsap.set(detail, { gap: '0' });
+      Array.from(detail.children).forEach((child) => {
+        const shouldExclude = excludedClasses.some((className) =>
+          (child as HTMLElement).classList.contains(className)
+        );
+        if (!shouldExclude) {
+          gsap.set(child as HTMLElement, { height: 0, opacity: 0, overflow: 'hidden' });
+        }
+      });
+    }
+
+    const dividerForeground = detail.querySelector('.divider-foreground') as HTMLElement;
+    if (dividerForeground) {
+      gsap.set(dividerForeground, { width: '0%' });
+    }
+
+    detail.addEventListener('click', () => handleDetailToggle(index, true));
+  });
+
+  handleDetailToggle(0, false, false);
 }
 
 window.Webflow ||= [];
