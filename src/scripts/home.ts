@@ -164,7 +164,12 @@ function toggleDetail(selector: string) {
   const hasImages = images.length === details.length;
   const animationConfig = { duration: 0.3, ease: 'power2.inOut' as const };
   const originalGaps = new Map<HTMLElement, string>();
-  const excludedClasses = [`${selector}_title`, 'divider', 'divider-background', 'divider-foreground'];
+  const excludedClasses = [
+    `${selector}_title`,
+    'divider',
+    'divider-background',
+    'divider-foreground',
+  ];
 
   const observer = new IntersectionObserver(
     (entries) => {
@@ -268,7 +273,11 @@ function toggleDetail(selector: string) {
     }
   };
 
-  const handleDetailToggle = (index: number, isClick: boolean = false, startAnimation: boolean = true) => {
+  const handleDetailToggle = (
+    index: number,
+    isClick: boolean = false,
+    startAnimation: boolean = true
+  ) => {
     if (isClick) {
       isManualClick = true;
       if (autoAdvanceTween) {

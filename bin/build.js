@@ -12,7 +12,7 @@ const SCRIPTS = [
   'home.ts',
   'invite.ts',
   'whats-new.ts',
-  'refer.ts',
+  'main.ts',
 ];
 
 const STYLE_DIR = 'src/styles';
