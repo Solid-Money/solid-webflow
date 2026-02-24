@@ -158,9 +158,11 @@ function toggleDetail(selector: string) {
 
   if (!details.length || !section) return;
 
+  const DURATION = 3;
   let currentImageIndex = 0;
   let isManualClick = false;
   let autoAdvanceTween: gsap.core.Tween | null = null;
+  let autoAdvanceDelay: ReturnType<typeof gsap.delayedCall> | null = null;
   const hasImages = images.length === details.length;
   const animationConfig = { duration: 0.3, ease: 'power2.inOut' as const };
   const originalGaps = new Map<HTMLElement, string>();
@@ -248,29 +250,37 @@ function toggleDetail(selector: string) {
     });
   };
 
+  const scheduleNext = (nextIndex: number) => {
+    autoAdvanceDelay = gsap.delayedCall(DURATION, () => {
+      autoAdvanceTween = null;
+      autoAdvanceDelay = null;
+      handleDetailToggle(nextIndex, false, true);
+    });
+  };
+
   const animateDivider = (detail: HTMLElement, index: number, total: number) => {
     const dividerForeground = detail.querySelector('.divider-foreground') as HTMLElement;
-    if (!dividerForeground) return;
+    const nextIndex = index < total - 1 ? index + 1 : 0;
 
     if (autoAdvanceTween) {
       autoAdvanceTween.kill();
       autoAdvanceTween = null;
     }
-
-    gsap.set(dividerForeground, { width: '0%' });
+    if (autoAdvanceDelay) {
+      autoAdvanceDelay.kill();
+      autoAdvanceDelay = null;
+    }
 
     if (!isManualClick) {
-      const nextIndex = index < total - 1 ? index + 1 : 0;
-      autoAdvanceTween = gsap.to(dividerForeground, {
-        width: '100%',
-        duration: 3,
-        ease: 'none',
-        onComplete: () => {
-          if (!isManualClick) {
-            handleDetailToggle(nextIndex, false, true);
-          }
-        },
-      });
+      if (dividerForeground) {
+        gsap.set(dividerForeground, { width: '0%' });
+        autoAdvanceTween = gsap.to(dividerForeground, {
+          width: '100%',
+          duration: DURATION,
+          ease: 'none',
+        });
+      }
+      scheduleNext(nextIndex);
     }
   };
 
@@ -285,6 +295,10 @@ function toggleDetail(selector: string) {
         autoAdvanceTween.kill();
         autoAdvanceTween = null;
       }
+      if (autoAdvanceDelay) {
+        autoAdvanceDelay.kill();
+        autoAdvanceDelay = null;
+      }
     }
 
     const exitingIndex = currentImageIndex;
@@ -297,7 +311,7 @@ function toggleDetail(selector: string) {
 
       const dividerForeground = detail.querySelector('.divider-foreground') as HTMLElement;
       if (dividerForeground) {
-        gsap.set(dividerForeground, { width: isActive ? undefined : '0%' });
+        gsap.set(dividerForeground, { width: '0%' });
       }
 
       if (isActive && startAnimation) {
