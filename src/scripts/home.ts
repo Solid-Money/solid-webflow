@@ -259,14 +259,15 @@ function toggleDetail(selector: string) {
 
     gsap.set(dividerForeground, { width: '0%' });
 
-    if (index < total - 1 && !isManualClick) {
+    if (!isManualClick) {
+      const nextIndex = index < total - 1 ? index + 1 : 0;
       autoAdvanceTween = gsap.to(dividerForeground, {
         width: '100%',
         duration: 3,
         ease: 'none',
         onComplete: () => {
           if (!isManualClick) {
-            handleDetailToggle(index + 1, false, true);
+            handleDetailToggle(nextIndex, false, true);
           }
         },
       });
