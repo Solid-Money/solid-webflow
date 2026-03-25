@@ -13,6 +13,7 @@ const SCRIPTS = [
   'invite.ts',
   'whats-new.ts',
   'main.ts',
+  'app.ts',
 ];
 
 const STYLE_DIR = 'src/styles';

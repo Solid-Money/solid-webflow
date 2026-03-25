@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@braintree/browser-detection':
+        specifier: ^2.1.1
+        version: 2.1.1
       '@finsweet/ts-utils':
         specifier: ^0.40.0
         version: 0.40.0
@@ -72,6 +75,9 @@ packages:
   '@babel/runtime@7.26.7':
     resolution: {integrity: sha512-AOPI3D+a8dXnja+iwsUqGRjr1BbZIe771sXdapOtYI531gSqpi92vXivKcq2asu/DFpdl1ceFAKZyRzK2PCVcQ==}
     engines: {node: '>=6.9.0'}
+
+  '@braintree/browser-detection@2.1.1':
+    resolution: {integrity: sha512-AG8uk+CXqMCE9qXiOfizReyJeHFxvXT98r1eXDXi3Ij9SIoWYEAqvYoMqAY/Qwlu9hVe/a85RLNbsqTAdvPdyQ==}
 
   '@changesets/apply-release-plan@7.0.8':
     resolution: {integrity: sha512-qjMUj4DYQ1Z6qHawsn7S71SujrExJ+nceyKKyI9iB+M5p9lCL55afuEd6uLBPRpLGWQwkwvWegDHtwHJb1UjpA==}
@@ -622,6 +628,9 @@ packages:
     resolution: {integrity: sha512-reYkTUJAZb9gUuZ2RvVCNhVHdg62RHnJ7WJl8ftMi4diZ6NWlciOzQN88pUhSELEwflJht4oQDv0F0BMlwaYtA==}
     engines: {node: '>=8'}
 
+  detectincognitojs@1.6.2:
+    resolution: {integrity: sha512-q4JXwcc7CZXDfSfWHBapnB1EHZgtW6OMcCWOXwN9/2gPJPRzDZL9wMrtpojWe1eUWDFP6bfuT4GIWJ07Waaq4w==}
+
   dir-glob@3.0.1:
     resolution: {integrity: sha512-WkrWp9GR4KXfKGYzOLmTuGVi1UWFfws377n9cc55/tb6DuqyF6pcQ5AbiHEshaDpY9v6oaSr2XCDidGmMwdzIA==}
     engines: {node: '>=8'}
@@ -1151,6 +1160,10 @@ snapshots:
   '@babel/runtime@7.26.7':
     dependencies:
       regenerator-runtime: 0.14.1
+
+  '@braintree/browser-detection@2.1.1':
+    dependencies:
+      detectincognitojs: 1.6.2
 
   '@changesets/apply-release-plan@7.0.8':
     dependencies:
@@ -1776,6 +1789,8 @@ snapshots:
   deep-is@0.1.4: {}
 
   detect-indent@6.1.0: {}
+
+  detectincognitojs@1.6.2: {}
 
   dir-glob@3.0.1:
     dependencies:

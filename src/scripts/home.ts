@@ -226,7 +226,7 @@ function toggleDetail(selector: string) {
     }
   };
 
-  const toggleDetailContent = (detail: HTMLElement, isActive: boolean, selector: string) => {
+  const toggleDetailContent = (detail: HTMLElement, isActive: boolean) => {
     const children = Array.from(detail.children) as HTMLElement[];
     const originalGap = originalGaps.get(detail) || '1rem';
 
@@ -307,7 +307,7 @@ function toggleDetail(selector: string) {
 
     details.forEach((detail, i) => {
       const isActive = i === index;
-      toggleDetailContent(detail as HTMLElement, isActive, selector);
+      toggleDetailContent(detail as HTMLElement, isActive);
 
       const dividerForeground = detail.querySelector('.divider-foreground') as HTMLElement;
       if (dividerForeground) {
