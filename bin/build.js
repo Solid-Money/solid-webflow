@@ -20,6 +20,7 @@ const STYLE_DIR = 'src/styles';
 const STYLES = [
   'home.css',
   'invite.css',
+  'main.css',
 ];
 
 const ENTRY_POINTS = [

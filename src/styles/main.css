@@ -1,0 +1,79 @@
+/* === Mobile/Tablet animated hamburger menu (adapted from Fuse) === */
+@media screen and (max-width: 991px) {
+  /* Full-viewport black overlay, itself NOT scrollable */
+  .w-nav-overlay {
+    background-color: #000;
+    height: 100vh;
+    width: 100vw;
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    z-index: 100;
+  }
+  /* Menu list fills overlay and is the ONLY scrollable area */
+  .w-nav-overlay .nav_menu {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100vh;
+    gap: 1.5rem;
+    padding: 6rem 2rem 4rem;
+    text-align: center;
+    position: static;
+    color: #fff;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    box-sizing: border-box;
+  }
+  .w-nav-overlay .nav_menu a {
+    color: #fff;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  /* Pin the hamburger/X button to the top-right of the viewport so it stays fixed while menu scrolls */
+  .nav_button {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 110;
+  }
+}
+
+/* Animated hamburger / X icon */
+.menu_toggle-icon {
+  position: relative;
+  width: 24px;
+  height: 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.toggle_icon-line {
+  width: 100%;
+  height: 2px;
+  background-color: #fff;
+  border-radius: 1px;
+  transform-origin: center;
+  transition:
+    transform 0.35s cubic-bezier(0.65, 0, 0.35, 1),
+    opacity 0.2s ease;
+}
+/* OPEN state: form an X */
+.nav_button.w--open .toggle_icon-line.is-top {
+  transform: translateY(8px) rotate(45deg);
+}
+.nav_button.w--open .toggle_icon-line.is-middle {
+  opacity: 0;
+  transform: scaleX(0);
+}
+.nav_button.w--open .toggle_icon-line.is-bottom {
+  transform: translateY(-8px) rotate(-45deg);
+}
+
+/* Hide Webflow's default icon font glyph on the menu button */
+.nav_button .w-icon-nav-menu {
+  display: none;
+}
