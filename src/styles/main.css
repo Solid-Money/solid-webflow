@@ -41,9 +41,6 @@
   }
   /* Pin the hamburger/X button to the top-right of the viewport so it stays fixed while menu scrolls */
   .nav_button {
-    position: fixed;
-    top: 1rem;
-    right: 1rem;
     z-index: 110;
     padding: 0;
   }
