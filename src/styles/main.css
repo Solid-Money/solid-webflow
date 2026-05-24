@@ -11,13 +11,13 @@
     z-index: 100;
   }
   /* Menu list fills overlay and is the ONLY scrollable area */
-  .w-nav-overlay .nav_menu {
+  .nav_menu.w-nav-menu {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     width: 100%;
-    height: 100vh;
+    height: 100dvh;
     gap: 1.5rem;
     padding: 2rem;
     text-align: center;
