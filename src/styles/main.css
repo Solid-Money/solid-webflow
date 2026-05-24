@@ -2,45 +2,43 @@
 @media screen and (max-width: 991px) {
   /* Full-viewport black overlay, itself NOT scrollable */
   .w-nav-overlay {
-    background-color: #000 !important;
-    height: 100vh !important;
-    width: 100vw !important;
-    position: fixed !important;
-    inset: 0 !important;
-    overflow: hidden !important;
-    z-index: 100 !important;
+    background-color: #000;
+    height: 100vh;
+    width: 100vw;
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    z-index: 100;
   }
   /* Menu list fills overlay and is the ONLY scrollable area */
-  .w-nav-overlay .nav_menu,
-  .nav_menu.w--nav-menu-open {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: center !important;
-    width: 100% !important;
-    height: 100vh !important;
-    gap: 1.5rem !important;
-    padding: 6rem 2rem 4rem !important;
-    text-align: center !important;
-    position: static !important;
-    color: #fff !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
+  .w-nav-overlay .nav_menu {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100vh;
+    gap: 1.5rem;
+    padding: 6rem 2rem 4rem;
+    text-align: center;
+    position: static;
+    color: #fff;
+    overflow-y: auto;
+    overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
-    box-sizing: border-box !important;
+    box-sizing: border-box;
   }
-  .w-nav-overlay .nav_menu a,
-  .nav_menu.w--nav-menu-open a {
-    color: #fff !important;
-    text-align: center !important;
-    flex-shrink: 0 !important;
+  .w-nav-overlay .nav_menu a {
+    color: #fff;
+    text-align: center;
+    flex-shrink: 0;
   }
   /* Pin the hamburger/X button to the top-right of the viewport so it stays fixed while menu scrolls */
   .nav_button {
-    position: fixed !important;
-    top: 1rem !important;
-    right: 1rem !important;
-    z-index: 110 !important;
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 110;
   }
 }
 
