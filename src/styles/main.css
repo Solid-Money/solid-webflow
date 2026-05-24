@@ -12,7 +12,7 @@
   }
   /* Menu list fills overlay and is the ONLY scrollable area */
   .nav_menu.w-nav-menu {
-    display: flex !important; /* override Webflow's inline display:block set on overlay open */
+    display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
