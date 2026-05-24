@@ -19,7 +19,7 @@
     width: 100%;
     height: 100vh;
     gap: 1.5rem;
-    padding: 6rem 2rem 4rem;
+    padding: 2rem;
     text-align: center;
     position: static;
     color: #fff;
@@ -33,12 +33,23 @@
     text-align: center;
     flex-shrink: 0;
   }
+  /* Selected/current menu item: no background, brand color text */
+  .w-nav-overlay .nav_menu a.w--current,
+  .w-nav-overlay .nav_menu .w--current {
+    background-color: transparent;
+    color: var(--base-color-brand--light-green);
+  }
   /* Pin the hamburger/X button to the top-right of the viewport so it stays fixed while menu scrolls */
   .nav_button {
     position: fixed;
     top: 1rem;
     right: 1rem;
     z-index: 110;
+    padding: 0;
+  }
+  /* Remove background color when the nav button is in the open (X) state */
+  .nav_button.w--open {
+    background-color: transparent;
   }
 }
 
