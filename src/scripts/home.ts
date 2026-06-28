@@ -4,7 +4,7 @@ import 'tippy.js/animations/scale.css';
 
 import { getFormFieldValue } from '@finsweet/ts-utils';
 import { BASE_URL, safeExecute } from '@utils/helpers';
-import type { APYs, JoinWaitlistBody } from '@utils/types';
+import type { ApyAsset, APYs, JoinWaitlistBody, LandingApyOverride } from '@utils/types';
 import gsap from 'gsap';
 import { ScrollTrigger, SplitText } from 'gsap/all';
 import tippy from 'tippy.js';
@@ -127,9 +127,45 @@ function joinWaitlist(className: string) {
   });
 }
 
+async function fetchApyOverride(): Promise<LandingApyOverride | null> {
+  try {
+    const response = await fetch(`${BASE_URL.accounts}/accounts/v1/app-config/landing-page-apy`);
+    if (!response.ok) return null;
+    return (await response.json()) as LandingApyOverride;
+  } catch (error) {
+    console.error('Error fetching APY override:', error);
+    return null;
+  }
+}
+
 async function fetchTotalApy(selector: string) {
   const apyElements = document.querySelectorAll(selector) as NodeListOf<HTMLElement>;
   if (!apyElements.length) return;
+
+  // An admin-managed override (set via the management portal) takes precedence
+  // over the auto-computed APY when enabled.
+  const override = await fetchApyOverride();
+  if (override?.overrideEnabled) {
+    if (override.mode === 'simple') {
+      // Broadcast the single managed value to every APY element.
+      apyElements.forEach((element) => {
+        element.innerHTML = `${override.apy.toFixed(2)}%`;
+      });
+    } else {
+      // Advanced: each element resolves to apys[asset][window]. The asset
+      // defaults to USDC (data-apy-asset opts into others); the window comes
+      // from data-apy (defaulting to all-time).
+      apyElements.forEach((element) => {
+        const asset = (element.dataset.apyAsset as ApyAsset) || 'usdc';
+        const window = (element.dataset.apy as keyof APYs) || 'allTime';
+        const value = override.apys?.[asset]?.[window];
+        if (typeof value === 'number') {
+          element.innerHTML = `${value.toFixed(2)}%`;
+        }
+      });
+    }
+    return;
+  }
 
   const response = await fetch(`${BASE_URL.analytics}/analytics/v1/bigquery-metrics/apys`);
   const data = (await response.json()) as APYs;
