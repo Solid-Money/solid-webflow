@@ -19,3 +19,12 @@ export interface APYs {
   fifteenDay: number;
   thirtyDay: number;
 }
+
+export type ApyAsset = 'usdc' | 'fuse' | 'eth';
+
+export interface LandingApyOverride {
+  overrideEnabled: boolean;
+  mode: 'simple' | 'advanced';
+  apy: number;
+  apys: Record<ApyAsset, APYs>;
+}
