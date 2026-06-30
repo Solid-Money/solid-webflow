@@ -147,9 +147,10 @@ async function fetchTotalApy(selector: string) {
   const override = await fetchApyOverride();
   if (override?.overrideEnabled) {
     if (override.mode === 'simple') {
-      // Broadcast the single managed value to every APY element.
+      // Broadcast the single managed value to every APY element, shown exactly
+      // as the admin entered it (no forced decimals, no % suffix).
       apyElements.forEach((element) => {
-        element.innerHTML = `${override.apy.toFixed(2)}%`;
+        element.innerHTML = `${override.apy}`;
       });
     } else {
       // Advanced: each element resolves to apys[asset][window]. The asset
@@ -160,7 +161,7 @@ async function fetchTotalApy(selector: string) {
         const window = (element.dataset.apy as keyof APYs) || 'allTime';
         const value = override.apys?.[asset]?.[window];
         if (typeof value === 'number') {
-          element.innerHTML = `${value.toFixed(2)}%`;
+          element.innerHTML = `${value}`;
         }
       });
     }
