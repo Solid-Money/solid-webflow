@@ -53,16 +53,49 @@ input:-webkit-autofill:active {
   width: 8px;
   height: 8px;
   border-radius: 100px;
-  background-color: rgba(255, 255, 255, 0.3);
+  background-color: var(--base-color-neutral--neutral);
   opacity: 1;
-  transition:
-    width 0.3s ease,
-    background-color 0.3s ease;
+  transition: background-color 0.3s ease;
 }
 
 .neobank_v4-dots .swiper-pagination-bullet-active {
-  width: 22px;
-  background-color: var(--base-color-brand--light-green);
+  background-color: var(--base-color-neutral--white);
+}
+
+/* Earn/Spend/Move — logo & flag marquee rows. The row markup (a track holding a
+   duplicated icon set) is authored with Webflow elements; these rules add the
+   infinite horizontal scroll and the black edge fade that Webflow can't express
+   on its own. The Earn crypto-token row is intentionally static — it has no
+   `.esm_v4-logos-track`, matching the design (no marquee). */
+@keyframes esmMarquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.esm_v4-logos {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 12%,
+    black 88%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%);
+}
+
+.esm_v4-logos-track {
+  animation: esmMarquee 24s linear infinite;
+}
+
+/* Pause the marquee for visitors who prefer reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  .esm_v4-logos-track {
+    animation: none;
+  }
 }
 
 /* Stack the Earn/Spend/Move layout and release the sticky phone on tablet/mobile */
