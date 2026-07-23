@@ -1,12 +1,14 @@
 import 'tippy.js/dist/tippy.css';
 import 'tippy.js/themes/light.css';
 import 'tippy.js/animations/scale.css';
+import 'swiper/css';
 
 import { getFormFieldValue } from '@finsweet/ts-utils';
 import { BASE_URL, safeExecute } from '@utils/helpers';
 import type { ApyAsset, APYs, JoinWaitlistBody, LandingApyOverride } from '@utils/types';
 import gsap from 'gsap';
 import { ScrollTrigger, SplitText } from 'gsap/all';
+import Swiper from 'swiper';
 import tippy from 'tippy.js';
 
 function initGsap() {
@@ -385,6 +387,97 @@ function toggleDetail(selector: string) {
   handleDetailToggle(0, false, false);
 }
 
+/**
+ * Home v4 — Earn. Spend. Move.
+ * A single phone illustration is sticky-pinned in the centre column while the
+ * left/right columns scroll. As each sub-section scrolls through the viewport
+ * centre, the corresponding phone screen is cross-faded in (via the `is-active`
+ * class, animated by the CSS opacity transition). The phone therefore appears
+ * to "fly" across the three sub-sections, switching screens as it goes.
+ */
+function initStickyPhone(sectionSelector: string) {
+  const section = document.querySelector(sectionSelector);
+  if (!section) return;
+
+  const screens = gsap.utils.toArray<HTMLElement>('.esm_v4-screen', section);
+  const panels = gsap.utils.toArray<HTMLElement>('.esm_v4-panel', section);
+  if (!screens.length || panels.length !== screens.length) return;
+
+  const setActiveScreen = (index: number) => {
+    screens.forEach((screen, i) => {
+      screen.classList.toggle('is-active', i === index);
+    });
+  };
+
+  panels.forEach((panel, index) => {
+    ScrollTrigger.create({
+      trigger: panel,
+      start: 'top center',
+      end: 'bottom center',
+      scrub: false,
+      onEnter: () => setActiveScreen(index),
+      onEnterBack: () => setActiveScreen(index),
+    });
+  });
+
+  setActiveScreen(0);
+}
+
+/**
+ * Home v4 — neobank feature carousel. Initialises Swiper (loaded from the CDN
+ * in the page head) on the neobank slider. `slidesPerView: 'auto'` lets the
+ * slide width come from CSS so the track bleeds past the container to the right.
+ */
+function initNeobankSwiper(selector: string) {
+  const element = document.querySelector<HTMLElement>(selector);
+  if (!element) return;
+
+  new Swiper(element, {
+    slidesPerView: 'auto',
+    spaceBetween: 24,
+    grabCursor: true,
+  });
+}
+
+/**
+ * Home v4 — "Get the app" / "Join now" / "Get started" buttons open the existing
+ * modal. Openers are marked with `data-app-modal="open"`; the modal is revealed
+ * by toggling the `is-open` class and closed via the backdrop, close buttons, or
+ * the Escape key.
+ */
+function initAppModal(openSelector: string) {
+  const modal = document.querySelector<HTMLElement>('.modal');
+  const openers = document.querySelectorAll<HTMLElement>(openSelector);
+  if (!modal || !openers.length) return;
+
+  const openModal = () => {
+    modal.classList.add('is-open');
+    document.body.style.overflow = 'hidden';
+  };
+  const closeModal = () => {
+    modal.classList.remove('is-open');
+    document.body.style.overflow = '';
+  };
+
+  openers.forEach((opener) => {
+    opener.addEventListener('click', (event) => {
+      event.preventDefault();
+      openModal();
+    });
+  });
+
+  const background = modal.querySelector('.modal_background');
+  background?.addEventListener('click', closeModal);
+
+  modal
+    .querySelectorAll('[data-app-modal="close"], .modal_close, .modal-close')
+    .forEach((closer) => closer.addEventListener('click', closeModal));
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') closeModal();
+  });
+}
+
 window.Webflow ||= [];
 window.Webflow.push(() => {
   safeExecute(initGsap);
@@ -395,4 +488,8 @@ window.Webflow.push(() => {
   safeExecute(initTippy);
   safeExecute(toggleDetail, 'earn');
   safeExecute(toggleDetail, 'wallet');
+  // Home v4
+  safeExecute(initStickyPhone, '.section_esm-v4');
+  safeExecute(initNeobankSwiper, '.neobank_v4-swiper');
+  safeExecute(initAppModal, '[data-app-modal="open"]');
 });

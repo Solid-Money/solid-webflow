@@ -22,3 +22,44 @@ input:-webkit-autofill:active {
 .swiper-wrapper.is-partner {
   animation: 20s swiperSlide infinite linear;
 }
+
+/* ==========================================================================
+   Home v4
+   ========================================================================== */
+
+/* Earn. Spend. Move — the phone illustration stays pinned in the centre column
+   while the side columns scroll, and cross-fades between screens. */
+.esm_v4-phone-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.esm_v4-screen {
+  transition: opacity 0.5s ease;
+}
+
+/* App modal open state, toggled by initAppModal() in home.ts */
+.modal.is-open {
+  display: flex;
+}
+
+/* Stack the Earn/Spend/Move layout and release the sticky phone on tablet/mobile */
+@media screen and (max-width: 991px) {
+  .esm_v4-scroller {
+    grid-template-columns: 1fr;
+  }
+
+  .esm_v4-phone-sticky {
+    position: relative;
+    top: auto;
+    height: auto;
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+  }
+
+  .esm_v4-panel,
+  .esm_v4-bullets {
+    min-height: auto;
+  }
+}
