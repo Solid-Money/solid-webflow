@@ -39,9 +39,30 @@ input:-webkit-autofill:active {
   transition: opacity 0.5s ease;
 }
 
-/* App modal open state, toggled by initAppModal() in home.ts */
-.modal.is-open {
-  display: flex;
+/* Neobank carousel — Swiper renders the pagination bullets into the
+   Webflow-authored `.neobank_v4-dots` container and toggles
+   `swiper-button-disabled` on the Webflow-authored arrows at runtime. These
+   rules style that library-generated output; the static navigation layout and
+   colours live in Webflow. */
+.neobank_v4-navbtn.swiper-button-disabled {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.neobank_v4-dots .swiper-pagination-bullet {
+  width: 8px;
+  height: 8px;
+  border-radius: 100px;
+  background-color: rgba(255, 255, 255, 0.3);
+  opacity: 1;
+  transition:
+    width 0.3s ease,
+    background-color 0.3s ease;
+}
+
+.neobank_v4-dots .swiper-pagination-bullet-active {
+  width: 22px;
+  background-color: var(--base-color-brand--light-green);
 }
 
 /* Stack the Earn/Spend/Move layout and release the sticky phone on tablet/mobile */

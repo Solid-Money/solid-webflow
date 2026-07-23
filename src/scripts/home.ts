@@ -9,6 +9,7 @@ import type { ApyAsset, APYs, JoinWaitlistBody, LandingApyOverride } from '@util
 import gsap from 'gsap';
 import { ScrollTrigger, SplitText } from 'gsap/all';
 import Swiper from 'swiper';
+import { Navigation, Pagination } from 'swiper/modules';
 import tippy from 'tippy.js';
 
 function initGsap() {
@@ -424,26 +425,45 @@ function initStickyPhone(sectionSelector: string) {
 }
 
 /**
- * Home v4 — neobank feature carousel. Initialises Swiper (loaded from the CDN
- * in the page head) on the neobank slider. `slidesPerView: 'auto'` lets the
- * slide width come from CSS so the track bleeds past the container to the right.
+ * Home v4 — neobank feature carousel. Initialises Swiper on the Webflow-authored
+ * slider (3.5 slides in view) and wires it to the Webflow-authored navigation
+ * arrows (`.neobank_v4-navbtn.is-prev` / `.is-next`) and pagination container
+ * (`.neobank_v4-dots`). No DOM is created here — the markup lives in Webflow.
+ * Swiper toggles `swiper-button-disabled` on an arrow when there is no slide in
+ * that direction and renders the pagination bullets into the dots container
+ * (both runtime hooks are styled in home.css).
  */
 function initNeobankSwiper(selector: string) {
   const element = document.querySelector<HTMLElement>(selector);
-  if (!element) return;
+  if (!element || element.dataset.swiperReady) return;
+  element.dataset.swiperReady = 'true';
+
+  const scope = element.closest<HTMLElement>('.section_neobank-v4') ?? document;
+  const prevEl = scope.querySelector<HTMLElement>('.neobank_v4-navbtn.is-prev');
+  const nextEl = scope.querySelector<HTMLElement>('.neobank_v4-navbtn.is-next');
+  const dotsEl = scope.querySelector<HTMLElement>('.neobank_v4-dots');
 
   new Swiper(element, {
-    slidesPerView: 'auto',
-    spaceBetween: 24,
+    modules: [Navigation, Pagination],
+    slidesPerView: 1.15,
+    spaceBetween: 16,
     grabCursor: true,
+    watchOverflow: true,
+    navigation: prevEl && nextEl ? { prevEl, nextEl } : undefined,
+    pagination: dotsEl ? { el: dotsEl, clickable: true } : undefined,
+    breakpoints: {
+      480: { slidesPerView: 2.2, spaceBetween: 20 },
+      768: { slidesPerView: 2.5, spaceBetween: 24 },
+      992: { slidesPerView: 3.5, spaceBetween: 24 },
+    },
   });
 }
 
 /**
  * Home v4 — "Get the app" / "Join now" / "Get started" buttons open the existing
  * modal. Openers are marked with `data-app-modal="open"`; the modal is revealed
- * by toggling the `is-open` class and closed via the backdrop, close buttons, or
- * the Escape key.
+ * by setting its display and closed via the backdrop, close buttons, or the
+ * Escape key.
  */
 function initAppModal(openSelector: string) {
   const modal = document.querySelector<HTMLElement>('.modal');
@@ -451,11 +471,11 @@ function initAppModal(openSelector: string) {
   if (!modal || !openers.length) return;
 
   const openModal = () => {
-    modal.classList.add('is-open');
+    modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
   };
   const closeModal = () => {
-    modal.classList.remove('is-open');
+    modal.style.display = '';
     document.body.style.overflow = '';
   };
 
