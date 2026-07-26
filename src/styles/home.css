@@ -73,7 +73,7 @@ input:-webkit-autofill:active {
 /* Same reason as above: Safari needs the prefixed backdrop-filter, and without
    it the hero QR panel falls back to a flat translucent card with no blur. */
 .hero_v4-qr-glass {
-  -webkit-backdrop-filter: blur(16px) saturate(180%) brightness(0.55);
+  -webkit-backdrop-filter: blur(20px);
 }
 
 /* Earn/Spend/Move — logo & flag marquee rows. The row markup (a track holding a
