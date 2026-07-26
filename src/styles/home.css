@@ -134,6 +134,11 @@ input:-webkit-autofill:active {
     position: relative;
     order: 2;
     height: auto;
+    /* Matches `.padding-global`, so the video lines up with the container it now
+       sits below rather than bleeding to the viewport edge. */
+    margin-right: 2.5rem;
+    margin-left: 2.5rem;
+    border-radius: 1.25rem;
   }
 
   .hero_v4-bg-video {
@@ -232,5 +237,13 @@ input:-webkit-autofill:active {
 
   .esm_v4-side:last-child > .esm_v4-bullets:nth-child(3) {
     order: 9;
+  }
+}
+
+/* `.padding-global` narrows on phones, so the hero video's inset follows it. */
+@media screen and (max-width: 767px) {
+  .hero_v4-bg {
+    margin-right: 1.25rem;
+    margin-left: 1.25rem;
   }
 }
