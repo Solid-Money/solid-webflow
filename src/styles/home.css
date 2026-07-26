@@ -134,8 +134,11 @@ input:-webkit-autofill:active {
     position: relative;
     order: 2;
     height: auto;
-    /* Matches `.padding-global`, so the video lines up with the container it now
-       sits below rather than bleeding to the viewport edge. */
+    /* Margins matching `.padding-global` line the video up with the container it
+       now sits below. `width` has to give way to them: the background layer is
+       `width: 100%`, which would measure the full section and put the margins
+       outside it, overflowing to the right by their combined width. */
+    width: auto;
     margin-right: 2.5rem;
     margin-left: 2.5rem;
     border-radius: 1.25rem;
@@ -237,6 +240,13 @@ input:-webkit-autofill:active {
 
   .esm_v4-side:last-child > .esm_v4-bullets:nth-child(3) {
     order: 9;
+  }
+
+  /* Every sub-section after the first opens against the previous one's bullets,
+     so it needs its own separation. The first one already sits under the
+     section's padding and the header above it. */
+  .esm_v4-side:first-child > .esm_v4-panel:nth-child(n + 2) {
+    padding-top: 4rem;
   }
 }
 
