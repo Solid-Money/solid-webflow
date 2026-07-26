@@ -609,24 +609,28 @@ function initStickyPhone(sectionSelector: string) {
   const panels = gsap.utils.toArray<HTMLElement>('.esm_v4-panel', section);
   if (!screens.length || panels.length !== screens.length) return;
 
-  const setActiveScreen = (index: number) => {
-    screens.forEach((screen, i) => {
-      screen.classList.toggle('is-active', i === index);
-    });
-  };
+  // Below the desktop breakpoint the three screens are laid out one per
+  // sub-section and all visible at once, so there is nothing to cross-fade.
+  gsap.matchMedia().add(`(min-width: ${PHONE_ANIMATION_MIN_WIDTH}px)`, () => {
+    const setActiveScreen = (index: number) => {
+      screens.forEach((screen, i) => {
+        screen.classList.toggle('is-active', i === index);
+      });
+    };
 
-  panels.forEach((panel, index) => {
-    ScrollTrigger.create({
-      trigger: panel,
-      start: 'top center',
-      end: 'bottom center',
-      scrub: false,
-      onEnter: () => setActiveScreen(index),
-      onEnterBack: () => setActiveScreen(index),
+    panels.forEach((panel, index) => {
+      ScrollTrigger.create({
+        trigger: panel,
+        start: 'top center',
+        end: 'bottom center',
+        scrub: false,
+        onEnter: () => setActiveScreen(index),
+        onEnterBack: () => setActiveScreen(index),
+      });
     });
+
+    setActiveScreen(0);
   });
-
-  setActiveScreen(0);
 }
 
 /**

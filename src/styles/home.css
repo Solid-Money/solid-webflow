@@ -112,22 +112,125 @@ input:-webkit-autofill:active {
   }
 }
 
-/* Stack the Earn/Spend/Move layout and release the sticky phone on tablet/mobile */
+/* ==========================================================================
+   Home v4 — tablet and phone
+   Sizing and spacing for these breakpoints lives in the Designer. What is here
+   is the three reflows Webflow has no controls for, all of which need
+   `display: contents` and `order`: the hero background layer becoming an
+   in-flow video, the feature row resequencing, and the Earn/Spend/Move columns
+   interleaving.
+   ========================================================================== */
 @media screen and (max-width: 991px) {
-  .esm_v4-scroller {
-    grid-template-columns: 1fr;
+  /* Hero — the background layer stops being a background. It leaves the
+     stacking context, drops below the copy, and plays as a normal 16:9 block;
+     the scrim goes with it, since it only existed to hold text legible on top
+     of the video. */
+  .section_hero-v4 {
+    display: flex;
+    flex-direction: column;
   }
 
-  .esm_v4-phone-sticky {
+  .hero_v4-bg {
     position: relative;
-    top: auto;
+    order: 2;
     height: auto;
-    padding-top: 2rem;
-    padding-bottom: 2rem;
+  }
+
+  .hero_v4-bg-video {
+    position: relative;
+    height: auto;
+    aspect-ratio: 16 / 9;
+  }
+
+  .hero_v4-bg-overlay {
+    display: none;
+  }
+
+  /* Feature — the two stats sit side by side, then each account block takes a
+     full row. Flattening the columns is what lets a stat and an account from
+     opposite columns be resequenced independently. The phone is desktop-only:
+     it exists to travel out from under the hero, and there is no travel here. */
+  .feature_v4-col {
+    display: contents;
+  }
+
+  .feature_v4-stat {
+    order: 1;
+    flex: 1 1 8rem;
+  }
+
+  .feature_v4-acct {
+    order: 2;
+    flex: 1 1 100%;
+  }
+
+  .feature_v4-phone-wrap {
+    display: none;
+  }
+
+  /* Earn/Spend/Move — desktop reads as three columns (panels | phone |
+     bullets); stacked it has to read as three sub-sections, each
+     panel → phone → bullets. Flattening every wrapper makes those nine blocks
+     siblings of one column, which is the only way `order` can pair them up. */
+  .esm_v4-scroller {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .esm_v4-side,
+  .esm_v4-mid,
+  .esm_v4-phone-sticky,
+  .esm_v4-screens {
+    display: contents;
   }
 
   .esm_v4-panel,
   .esm_v4-bullets {
     min-height: auto;
+  }
+
+  /* All three screens are on the page at once now, so none of them fade. */
+  .esm_v4-screen {
+    width: 20rem;
+    max-width: 100%;
+    margin-right: auto;
+    margin-left: auto;
+    opacity: 1;
+  }
+
+  .esm_v4-side:first-child > .esm_v4-panel:nth-child(1) {
+    order: 1;
+  }
+
+  .esm_v4-mid .esm_v4-screen:nth-child(1) {
+    order: 2;
+  }
+
+  .esm_v4-side:last-child > .esm_v4-bullets:nth-child(1) {
+    order: 3;
+  }
+
+  .esm_v4-side:first-child > .esm_v4-panel:nth-child(2) {
+    order: 4;
+  }
+
+  .esm_v4-mid .esm_v4-screen:nth-child(2) {
+    order: 5;
+  }
+
+  .esm_v4-side:last-child > .esm_v4-bullets:nth-child(2) {
+    order: 6;
+  }
+
+  .esm_v4-side:first-child > .esm_v4-panel:nth-child(3) {
+    order: 7;
+  }
+
+  .esm_v4-mid .esm_v4-screen:nth-child(3) {
+    order: 8;
+  }
+
+  .esm_v4-side:last-child > .esm_v4-bullets:nth-child(3) {
+    order: 9;
   }
 }
