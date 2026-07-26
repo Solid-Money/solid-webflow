@@ -62,6 +62,20 @@ input:-webkit-autofill:active {
   background-color: var(--base-color-neutral--white);
 }
 
+/* The stat numbers are painted with a gradient clipped to the glyphs. Webflow
+   writes the unprefixed `background-clip: text`; Safari before 18.4 only honours
+   the prefixed form, and without it the gradient fills the whole box behind
+   text that `-webkit-text-fill-color` has already made transparent. */
+.feature_v4-stat-num {
+  -webkit-background-clip: text;
+}
+
+/* Same reason as above: Safari needs the prefixed backdrop-filter, and without
+   it the hero QR panel falls back to a flat translucent card with no blur. */
+.hero_v4-qr-glass {
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+}
+
 /* Earn/Spend/Move — logo & flag marquee rows. The row markup (a track holding a
    duplicated icon set) is authored with Webflow elements; these rules add the
    infinite horizontal scroll and the black edge fade that Webflow can't express
@@ -88,7 +102,7 @@ input:-webkit-autofill:active {
 }
 
 .esm_v4-logos-track {
-  animation: esmMarquee 24s linear infinite;
+  animation: esmMarquee 12s linear infinite;
 }
 
 /* Pause the marquee for visitors who prefer reduced motion. */
