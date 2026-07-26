@@ -141,13 +141,32 @@ async function fetchApyOverride(): Promise<LandingApyOverride | null> {
   }
 }
 
+/**
+ * Both APY consumers on this page hit the same two endpoints, so the responses
+ * are shared rather than fetched once per consumer.
+ */
+let apyOverrideRequest: Promise<LandingApyOverride | null> | undefined;
+let apysRequest: Promise<APYs> | undefined;
+
+function getApyOverride() {
+  apyOverrideRequest ??= fetchApyOverride();
+  return apyOverrideRequest;
+}
+
+function getApys() {
+  apysRequest ??= fetch(`${BASE_URL.analytics}/analytics/v1/bigquery-metrics/apys`).then(
+    (response) => response.json() as Promise<APYs>
+  );
+  return apysRequest;
+}
+
 async function fetchTotalApy(selector: string) {
   const apyElements = document.querySelectorAll(selector) as NodeListOf<HTMLElement>;
   if (!apyElements.length) return;
 
   // An admin-managed override (set via the management portal) takes precedence
   // over the auto-computed APY when enabled.
-  const override = await fetchApyOverride();
+  const override = await getApyOverride();
   if (override?.overrideEnabled) {
     if (override.mode === 'simple') {
       // Broadcast the single managed value to every APY element, shown exactly
@@ -171,14 +190,54 @@ async function fetchTotalApy(selector: string) {
     return;
   }
 
-  const response = await fetch(`${BASE_URL.analytics}/analytics/v1/bigquery-metrics/apys`);
-  const data = (await response.json()) as APYs;
+  const data = await getApys();
 
   apyElements.forEach((element) => {
     const apyKey = element.dataset.apy;
     if (apyKey && apyKey in data) {
       element.innerHTML = `${data[apyKey as keyof APYs].toFixed(2)}%`;
     }
+  });
+}
+
+/**
+ * Home v4 — the Earn token chips. Each carries `data-token-apy` naming its
+ * asset, and resolves against the same admin override the rest of the page
+ * uses: a simple override goes on every chip, an advanced one is read per
+ * asset, and anything the override does not carry (today that includes USDT,
+ * which the override payload has no key for) falls back to the live all-time
+ * figure. Unlike `[data-apy]` these always render their own `%`, so the chip
+ * reads the same whichever branch supplied the number. On failure the chips
+ * keep whatever was authored in the Designer.
+ */
+async function renderTokenApys(selector: string) {
+  const elements = document.querySelectorAll<HTMLElement>(selector);
+  if (!elements.length) return;
+
+  const override = await getApyOverride();
+
+  if (override?.overrideEnabled && override.mode === 'simple') {
+    elements.forEach((element) => {
+      element.innerHTML = `${override.apy}%`;
+    });
+    return;
+  }
+
+  // `apys` is keyed by the assets the override knows about; a chip may name one
+  // it does not, hence the widened lookup rather than an ApyAsset index.
+  const managed = override?.overrideEnabled
+    ? (override.apys as Partial<Record<string, APYs>> | undefined)
+    : undefined;
+
+  const assets = [...elements].map((element) => element.dataset.tokenApy ?? '');
+  const total = assets.every((asset) => typeof managed?.[asset]?.allTime === 'number')
+    ? undefined
+    : (await getApys()).allTime;
+
+  elements.forEach((element, index) => {
+    const value = managed?.[assets[index]]?.allTime;
+    if (typeof value === 'number') element.innerHTML = `${value}%`;
+    else if (typeof total === 'number') element.innerHTML = `${total.toFixed(2)}%`;
   });
 }
 
@@ -657,6 +716,7 @@ window.Webflow.push(() => {
   // Home v4
   safeExecute(initHeroBackgroundVideo, '.hero_v4-bg-video-el');
   safeExecute(initFeaturePhoneScroll, '.section_feature-v4');
+  safeExecute(renderTokenApys, '[data-token-apy]');
   safeExecute(initStickyPhone, '.section_esm-v4');
   safeExecute(initNeobankSwiper, '.neobank_v4-swiper');
   safeExecute(initAppModal, '[data-app-modal="open"]');
