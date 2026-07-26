@@ -452,6 +452,89 @@ function initHeroBackgroundVideo(selector: string) {
 }
 
 /**
+ * Home v4 — the feature phone enters from under the hero. It starts scaled up
+ * and pushed up behind the hero background video with only the bottom sliver of
+ * it showing, then travels down into the feature row and settles at its natural
+ * size as the section scrolls in.
+ *
+ * The tuck is done by the section's own `overflow: hidden`: the feature section
+ * sits flush under the hero, so anything the phone pushes above the section's
+ * top edge is clipped rather than drawn over the video — no stacking context
+ * juggling with the hero required.
+ */
+const PHONE_START_SCALE = 3;
+/** Fraction of the scaled phone left showing below the hero at rest. */
+const PHONE_VISIBLE_AT_START = 0.2;
+/** Below this the row wraps, so the phone is no longer the centre column. */
+const PHONE_ANIMATION_MIN_WIDTH = 992;
+
+function initFeaturePhoneScroll(sectionSelector: string) {
+  const section = document.querySelector<HTMLElement>(sectionSelector);
+  const phone = section?.querySelector<HTMLImageElement>('.feature_v4-phone-img');
+  const row = section?.querySelector<HTMLElement>('.feature_v4-row');
+  if (!section || !phone || !row) return;
+
+  gsap.matchMedia().add(
+    {
+      canAnimate: `(min-width: ${PHONE_ANIMATION_MIN_WIDTH}px) and (prefers-reduced-motion: no-preference)`,
+    },
+    (context) => {
+      if (!context.conditions?.canAnimate) return;
+
+      // Layout offsets rather than bounding rects: these must describe where the
+      // phone sits *before* any transform, and offsetTop/offsetHeight ignore it.
+      const layoutTopWithinSection = () => {
+        let top = 0;
+        let node: HTMLElement | null = phone;
+
+        while (node && node !== section) {
+          top += node.offsetTop;
+          node = node.offsetParent as HTMLElement | null;
+        }
+
+        return top;
+      };
+
+      // Never zoom past the container, or the widest part of the travel gets its
+      // sides cut off by the section instead of just its top.
+      const startScale = () => Math.min(PHONE_START_SCALE, row.clientWidth / phone.offsetWidth);
+
+      const startY = () =>
+        -phone.offsetHeight * startScale() * (1 - PHONE_VISIBLE_AT_START) -
+        layoutTopWithinSection();
+
+      // The phone renders several times its layout width, so ask for a srcset
+      // candidate that matches rather than the one sized for 22rem.
+      phone.sizes = `${Math.round(phone.offsetWidth * startScale())}px`;
+
+      gsap.set(phone, { transformOrigin: 'center top' });
+      gsap.fromTo(
+        phone,
+        { y: startY, scale: startScale },
+        {
+          y: 0,
+          scale: 1,
+          ease: 'power2.out',
+          scrollTrigger: {
+            trigger: section,
+            start: 'top bottom',
+            end: 'top top',
+            scrub: 1,
+            invalidateOnRefresh: true,
+          },
+        }
+      );
+
+      // Until the phone has loaded its height is 0, which would put the start
+      // offset at the top of the section instead of behind the hero.
+      if (!phone.complete) {
+        phone.addEventListener('load', () => ScrollTrigger.refresh(), { once: true });
+      }
+    }
+  );
+}
+
+/**
  * Home v4 — Earn. Spend. Move.
  * A single phone illustration is sticky-pinned in the centre column while the
  * left/right columns scroll. As each sub-section scrolls through the viewport
@@ -573,6 +656,7 @@ window.Webflow.push(() => {
   safeExecute(toggleDetail, 'wallet');
   // Home v4
   safeExecute(initHeroBackgroundVideo, '.hero_v4-bg-video-el');
+  safeExecute(initFeaturePhoneScroll, '.section_feature-v4');
   safeExecute(initStickyPhone, '.section_esm-v4');
   safeExecute(initNeobankSwiper, '.neobank_v4-swiper');
   safeExecute(initAppModal, '[data-app-modal="open"]');
