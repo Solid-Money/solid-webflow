@@ -389,6 +389,69 @@ function toggleDetail(selector: string) {
 }
 
 /**
+ * Home v4 — hero background video. The `<mux-background-video>` element lives in
+ * a Webflow embed and holds its Mux stream in `data-src`, so nothing is fetched
+ * until we decide it should be: visitors who ask for reduced motion or who are
+ * on a metered connection keep the Mux thumbnail poster instead.
+ *
+ * The element renders its `<video>` on top of the slotted poster, and that video
+ * paints opaque as soon as it has a source — so it is held at `opacity: 0` and
+ * faded in on the first decoded frame. Any failure to play therefore leaves the
+ * poster on screen rather than a black hero. The rendition is capped to the
+ * viewport and playback pauses once the hero scrolls out of view.
+ */
+type MuxBackgroundVideoElement = HTMLElement & { video?: HTMLVideoElement | null };
+
+const HERO_VIDEO_MOBILE_BREAKPOINT = 768;
+
+function initHeroBackgroundVideo(selector: string) {
+  const element = document.querySelector<MuxBackgroundVideoElement>(selector);
+  const source = element?.dataset.src;
+  if (!element || !source) return;
+
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const savesData = Boolean(
+    (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData
+  );
+  if (prefersReducedMotion || savesData) return;
+
+  const observer =
+    'IntersectionObserver' in window
+      ? new IntersectionObserver(([entry]) => {
+          const { video } = element;
+          if (!video) return;
+
+          if (entry.isIntersecting) video.play().catch(() => undefined);
+          else video.pause();
+        })
+      : undefined;
+
+  customElements.whenDefined('mux-background-video').then(() => {
+    const { video } = element;
+
+    if (video) {
+      video.style.opacity = '0';
+      video.style.transition = 'opacity 0.6s ease';
+
+      const revealVideo = () => {
+        video.style.opacity = '1';
+      };
+
+      if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) revealVideo();
+      else video.addEventListener('loadeddata', revealVideo, { once: true });
+    }
+
+    element.setAttribute(
+      'max-resolution',
+      window.innerWidth < HERO_VIDEO_MOBILE_BREAKPOINT ? '720p' : '1080p'
+    );
+    element.setAttribute('src', source);
+
+    observer?.observe(element);
+  });
+}
+
+/**
  * Home v4 — Earn. Spend. Move.
  * A single phone illustration is sticky-pinned in the centre column while the
  * left/right columns scroll. As each sub-section scrolls through the viewport
@@ -509,6 +572,7 @@ window.Webflow.push(() => {
   safeExecute(toggleDetail, 'earn');
   safeExecute(toggleDetail, 'wallet');
   // Home v4
+  safeExecute(initHeroBackgroundVideo, '.hero_v4-bg-video-el');
   safeExecute(initStickyPhone, '.section_esm-v4');
   safeExecute(initNeobankSwiper, '.neobank_v4-swiper');
   safeExecute(initAppModal, '[data-app-modal="open"]');
