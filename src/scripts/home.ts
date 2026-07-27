@@ -526,6 +526,8 @@ const PHONE_START_SCALE = 3;
 const PHONE_VISIBLE_AT_START = 0.2;
 /** Below this the row wraps, so the phone is no longer the centre column. */
 const PHONE_ANIMATION_MIN_WIDTH = 992;
+/** Scroll distance the travel is spread over, in viewport heights. */
+const PHONE_TRAVEL_VIEWPORTS = 1.25;
 
 function initFeaturePhoneScroll(sectionSelector: string) {
   const section = document.querySelector<HTMLElement>(sectionSelector);
@@ -573,11 +575,15 @@ function initFeaturePhoneScroll(sectionSelector: string) {
         {
           y: 0,
           scale: 1,
-          ease: 'power2.out',
+          // Linear, and over a range longer than the viewport. An eased-out
+          // travel spent almost all of itself in the first half of the scroll,
+          // so the phone had already landed by the time the section was properly
+          // in view; the smoothing on `scrub` is what softens the motion now.
+          ease: 'none',
           scrollTrigger: {
             trigger: section,
             start: 'top bottom',
-            end: 'top top',
+            end: `+=${PHONE_TRAVEL_VIEWPORTS * 100}%`,
             scrub: 1,
             invalidateOnRefresh: true,
           },
