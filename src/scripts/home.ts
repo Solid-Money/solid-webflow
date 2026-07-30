@@ -526,8 +526,8 @@ const PHONE_START_SCALE = 3;
 const PHONE_VISIBLE_AT_START = 0.2;
 /** Below this the row wraps, so the phone is no longer the centre column. */
 const PHONE_ANIMATION_MIN_WIDTH = 992;
-/** Scroll distance the travel is spread over, in viewport heights. */
-const PHONE_TRAVEL_VIEWPORTS = 1.25;
+/** Where the section's top sits, as a fraction of the viewport, when the travel begins. */
+const PHONE_TRAVEL_START = 0.7;
 
 function initFeaturePhoneScroll(sectionSelector: string) {
   const section = document.querySelector<HTMLElement>(sectionSelector);
@@ -575,15 +575,27 @@ function initFeaturePhoneScroll(sectionSelector: string) {
         {
           y: 0,
           scale: 1,
-          // Linear, and over a range longer than the viewport. An eased-out
-          // travel spent almost all of itself in the first half of the scroll,
-          // so the phone had already landed by the time the section was properly
-          // in view; the smoothing on `scrub` is what softens the motion now.
+          // Linear: an eased-out travel spent almost all of itself in the first
+          // half of the scroll, so the phone had already landed by the time the
+          // section was properly in view. The smoothing on `scrub` is what
+          // softens the motion now.
           ease: 'none',
           scrollTrigger: {
             trigger: section,
-            start: 'top bottom',
-            end: `+=${PHONE_TRAVEL_VIEWPORTS * 100}%`,
+            // Hold the tucked pose while the hero still fills the screen, then
+            // travel. The end is the scroll offset at which the phone's resting
+            // position is vertically centred, so it settles fully in frame
+            // rather than already clipped by the top of the viewport:
+            //   endScroll  = sectionTop + naturalTop - (viewport - height) / 2
+            //   startScroll = sectionTop - PHONE_TRAVEL_START * viewport
+            // which subtract to the distance below.
+            start: `top ${PHONE_TRAVEL_START * 100}%`,
+            end: () =>
+              `+=${
+                layoutTopWithinSection() +
+                (PHONE_TRAVEL_START - 0.5) * window.innerHeight +
+                phone.offsetHeight / 2
+              }`,
             scrub: 1,
             invalidateOnRefresh: true,
           },
