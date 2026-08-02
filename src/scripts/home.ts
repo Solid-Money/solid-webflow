@@ -681,7 +681,7 @@ function initNeobankSwiper(selector: string) {
     breakpoints: {
       480: { slidesPerView: 2.2, spaceBetween: 20 },
       768: { slidesPerView: 2.5, spaceBetween: 24 },
-      992: { slidesPerView: 3.5, spaceBetween: 24 },
+      992: { slidesPerView: 3, spaceBetween: 24 },
     },
   });
 }
