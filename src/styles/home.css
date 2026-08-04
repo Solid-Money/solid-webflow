@@ -105,6 +105,24 @@ input:-webkit-autofill:active {
   animation: marqueeLoop 5s linear infinite;
 }
 
+/* The oval that fades the bottom of the hero media into the black beneath it,
+   so the two sections meet without a seam. It lives here rather than in the
+   Designer because Webflow's gradient model has no two-radius ellipse: opening
+   the panel rewrote it to `circle farthest-corner at 150% 65% 50% 106%`, which
+   is not valid CSS, and the fade silently stopped rendering.
+
+   The centre sits just below the box so the solid part of the gradient runs
+   past the bottom edge rather than only reaching it — at the bottom corners the
+   gradient is still inside the opaque stop. */
+.hero_v4-bg-overlay {
+  background-image: radial-gradient(
+    ellipse 150% 65% at 50% 106%,
+    #000 0%,
+    #000 42%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
+
 /* Partners & Backers marquee. The Designer holds one row of logos and
    `initPartnerMarquee` clones it, so the loop shifts by half the track rather
    than all of it — the second half is what takes over as the first leaves.
