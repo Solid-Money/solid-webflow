@@ -510,106 +510,8 @@ function initHeroBackgroundVideo(selector: string) {
   });
 }
 
-/**
- * Home v4 — the feature phone enters from under the hero. It starts scaled up
- * and pushed up behind the hero background video with only the bottom sliver of
- * it showing, then travels down into the feature row and settles at its natural
- * size as the section scrolls in.
- *
- * The tuck is done by the section's own `overflow: hidden`: the feature section
- * sits flush under the hero, so anything the phone pushes above the section's
- * top edge is clipped rather than drawn over the video — no stacking context
- * juggling with the hero required.
- */
-const PHONE_START_SCALE = 3;
-/** Fraction of the scaled phone left showing below the hero at rest. */
-const PHONE_VISIBLE_AT_START = 0.2;
-/** Below this the row wraps, so the phone is no longer the centre column. */
-const PHONE_ANIMATION_MIN_WIDTH = 992;
-/** Where the section's top sits, as a fraction of the viewport, when the travel begins. */
-const PHONE_TRAVEL_START = 0.7;
-
-function initFeaturePhoneScroll(sectionSelector: string) {
-  const section = document.querySelector<HTMLElement>(sectionSelector);
-  const phone = section?.querySelector<HTMLImageElement>('.feature_v4-phone-img');
-  const row = section?.querySelector<HTMLElement>('.feature_v4-row');
-  if (!section || !phone || !row) return;
-
-  gsap.matchMedia().add(
-    {
-      canAnimate: `(min-width: ${PHONE_ANIMATION_MIN_WIDTH}px) and (prefers-reduced-motion: no-preference)`,
-    },
-    (context) => {
-      if (!context.conditions?.canAnimate) return;
-
-      // Layout offsets rather than bounding rects: these must describe where the
-      // phone sits *before* any transform, and offsetTop/offsetHeight ignore it.
-      const layoutTopWithinSection = () => {
-        let top = 0;
-        let node: HTMLElement | null = phone;
-
-        while (node && node !== section) {
-          top += node.offsetTop;
-          node = node.offsetParent as HTMLElement | null;
-        }
-
-        return top;
-      };
-
-      // Never zoom past the container, or the widest part of the travel gets its
-      // sides cut off by the section instead of just its top.
-      const startScale = () => Math.min(PHONE_START_SCALE, row.clientWidth / phone.offsetWidth);
-
-      const startY = () =>
-        -phone.offsetHeight * startScale() * (1 - PHONE_VISIBLE_AT_START) -
-        layoutTopWithinSection();
-
-      // The phone renders several times its layout width, so ask for a srcset
-      // candidate that matches rather than the one sized for 22rem.
-      phone.sizes = `${Math.round(phone.offsetWidth * startScale())}px`;
-
-      gsap.set(phone, { transformOrigin: 'center top' });
-      gsap.fromTo(
-        phone,
-        { y: startY, scale: startScale },
-        {
-          y: 0,
-          scale: 1,
-          // Linear: an eased-out travel spent almost all of itself in the first
-          // half of the scroll, so the phone had already landed by the time the
-          // section was properly in view. The smoothing on `scrub` is what
-          // softens the motion now.
-          ease: 'none',
-          scrollTrigger: {
-            trigger: section,
-            // Hold the tucked pose while the hero still fills the screen, then
-            // travel. The end is the scroll offset at which the phone's resting
-            // position is vertically centred, so it settles fully in frame
-            // rather than already clipped by the top of the viewport:
-            //   endScroll  = sectionTop + naturalTop - (viewport - height) / 2
-            //   startScroll = sectionTop - PHONE_TRAVEL_START * viewport
-            // which subtract to the distance below.
-            start: `top ${PHONE_TRAVEL_START * 100}%`,
-            end: () =>
-              `+=${
-                layoutTopWithinSection() +
-                (PHONE_TRAVEL_START - 0.5) * window.innerHeight +
-                phone.offsetHeight / 2
-              }`,
-            scrub: 1,
-            invalidateOnRefresh: true,
-          },
-        }
-      );
-
-      // Until the phone has loaded its height is 0, which would put the start
-      // offset at the top of the section instead of behind the hero.
-      if (!phone.complete) {
-        phone.addEventListener('load', () => ScrollTrigger.refresh(), { once: true });
-      }
-    }
-  );
-}
+/** Below this the Earn/Spend/Move columns stack, one screen per sub-section. */
+const ESM_CROSSFADE_MIN_WIDTH = 992;
 
 /**
  * Home v4 — Earn. Spend. Move.
@@ -629,7 +531,7 @@ function initStickyPhone(sectionSelector: string) {
 
   // Below the desktop breakpoint the three screens are laid out one per
   // sub-section and all visible at once, so there is nothing to cross-fade.
-  gsap.matchMedia().add(`(min-width: ${PHONE_ANIMATION_MIN_WIDTH}px)`, () => {
+  gsap.matchMedia().add(`(min-width: ${ESM_CROSSFADE_MIN_WIDTH}px)`, () => {
     const setActiveScreen = (index: number) => {
       screens.forEach((screen, i) => {
         screen.classList.toggle('is-active', i === index);
@@ -725,6 +627,49 @@ function initAppModal(openSelector: string) {
   });
 }
 
+/** Pixels per second the partner logos travel, held constant across viewports. */
+const PARTNER_MARQUEE_SPEED = 60;
+
+/**
+ * Home v4 — Partners & Backers marquee. The Designer holds a single row of
+ * logos; duplicating it there is what had two tracks fighting for the same
+ * space. Instead the row is cloned here until one half of the track outruns the
+ * viewport, then cloned once more so the track is two identical halves — which
+ * is what lets the CSS loop shift by exactly 50% and hand over seamlessly.
+ *
+ * Duration is derived rather than fixed, so a wider track scrolls for longer
+ * instead of faster and the logos move at the same speed on every screen.
+ */
+function initPartnerMarquee(selector: string) {
+  const track = document.querySelector<HTMLElement>(selector);
+  if (!track) return;
+
+  const originals = [...track.children].map((slide) => slide.cloneNode(true));
+  if (!originals.length) return;
+
+  const build = () => {
+    const setWidth = [...track.children]
+      .slice(0, originals.length)
+      .reduce((total, slide) => total + slide.getBoundingClientRect().width, 0);
+    // Zero until the logos have loaded; `load` below re-runs this.
+    if (!setWidth) return;
+
+    const setsPerHalf = Math.max(1, Math.ceil(window.innerWidth / setWidth));
+    if (track.children.length === originals.length * setsPerHalf * 2) return;
+
+    track.replaceChildren(
+      ...Array.from({ length: setsPerHalf * 2 }, () =>
+        originals.map((slide) => slide.cloneNode(true))
+      ).flat()
+    );
+    track.style.animationDuration = `${(setWidth * setsPerHalf) / PARTNER_MARQUEE_SPEED}s`;
+  };
+
+  build();
+  window.addEventListener('load', build);
+  window.addEventListener('resize', build);
+}
+
 window.Webflow ||= [];
 window.Webflow.push(() => {
   safeExecute(initGsap);
@@ -737,9 +682,9 @@ window.Webflow.push(() => {
   safeExecute(toggleDetail, 'wallet');
   // Home v4
   safeExecute(initHeroBackgroundVideo, '.hero_v4-bg-video-el');
-  safeExecute(initFeaturePhoneScroll, '.section_feature-v4');
   safeExecute(renderTokenApys, '[data-token-apy]');
   safeExecute(initStickyPhone, '.section_esm-v4');
   safeExecute(initNeobankSwiper, '.neobank_v4-swiper');
   safeExecute(initAppModal, '[data-app-modal="open"]');
+  safeExecute(initPartnerMarquee, '.section_partner-v4 .swiper-wrapper.is-partner');
 });

@@ -81,7 +81,7 @@ input:-webkit-autofill:active {
    infinite horizontal scroll and the black edge fade that Webflow can't express
    on its own. The Earn crypto-token row is intentionally static — it has no
    `.esm_v4-logos-track`, matching the design (no marquee). */
-@keyframes esmMarquee {
+@keyframes marqueeLoop {
   from {
     transform: translateX(0);
   }
@@ -102,12 +102,37 @@ input:-webkit-autofill:active {
 }
 
 .esm_v4-logos-track {
-  animation: esmMarquee 5s linear infinite;
+  animation: marqueeLoop 5s linear infinite;
 }
 
-/* Pause the marquee for visitors who prefer reduced motion. */
+/* Partners & Backers marquee. The Designer holds one row of logos and
+   `initPartnerMarquee` clones it, so the loop shifts by half the track rather
+   than all of it — the second half is what takes over as the first leaves.
+   Everything is scoped to the v4 section: `.swiper.is-partner` and its children
+   are shared with the existing home page, which keeps its own hand-duplicated
+   markup and its own `-100%` loop.
+
+   Swiper's stylesheet sizes slides to fill their container, which is what had
+   the two rows sitting on top of each other rather than running end to end, so
+   the track and slides are sized to their content here instead. */
+.section_partner-v4 .swiper.is-partner {
+  overflow: hidden;
+}
+
+.section_partner-v4 .swiper-wrapper.is-partner {
+  width: max-content;
+  animation: marqueeLoop 40s linear infinite;
+}
+
+.section_partner-v4 .swiper-slide.is-partner {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+/* Pause the marquees for visitors who prefer reduced motion. */
 @media (prefers-reduced-motion: reduce) {
-  .esm_v4-logos-track {
+  .esm_v4-logos-track,
+  .section_partner-v4 .swiper-wrapper.is-partner {
     animation: none;
   }
 }
@@ -115,51 +140,21 @@ input:-webkit-autofill:active {
 /* ==========================================================================
    Home v4 — tablet and phone
    Sizing and spacing for these breakpoints lives in the Designer. What is here
-   is the three reflows Webflow has no controls for, all of which need
-   `display: contents` and `order`: the hero background layer becoming an
-   in-flow video, the feature row resequencing, and the Earn/Spend/Move columns
-   interleaving.
+   are the two reflows Webflow has no controls for, both of which need
+   `display: contents` and `order`: the feature row resequencing and the
+   Earn/Spend/Move columns interleaving.
    ========================================================================== */
 @media screen and (max-width: 991px) {
-  /* Hero — the background layer stops being a background. It leaves the
-     stacking context, drops below the copy, and plays as a normal 16:9 block;
-     the scrim goes with it, since it only existed to hold text legible on top
-     of the video. */
-  .section_hero-v4 {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .hero_v4-bg {
-    position: relative;
-    order: 2;
-    height: auto;
-    /* Margins matching `.padding-global` line the video up with the container it
-       now sits below. `width` has to give way to them: the background layer is
-       `width: 100%`, which would measure the full section and put the margins
-       outside it, overflowing to the right by their combined width. */
-    width: auto;
-    margin-right: 2.5rem;
-    margin-left: 2.5rem;
-    border-radius: 1.25rem;
-  }
-
-  .hero_v4-bg-video {
-    position: relative;
-    height: auto;
-    aspect-ratio: 16 / 9;
-  }
-
-  .hero_v4-bg-overlay {
-    display: none;
-  }
-
   /* Feature — the two stats sit side by side, then each account block takes a
      full row. Flattening the columns is what lets a stat and an account from
-     opposite columns be resequenced independently. The phone is desktop-only:
-     it exists to travel out from under the hero, and there is no travel here. */
+     opposite columns be resequenced independently. */
   .feature_v4-col {
     display: contents;
+  }
+
+  /* The columns it separates are stacked here, so it has nothing to divide. */
+  .feature_v4-divider {
+    display: none;
   }
 
   .feature_v4-stat {
@@ -170,10 +165,6 @@ input:-webkit-autofill:active {
   .feature_v4-acct {
     order: 2;
     flex: 1 1 100%;
-  }
-
-  .feature_v4-phone-wrap {
-    display: none;
   }
 
   /* Earn/Spend/Move — desktop reads as three columns (panels | phone |
@@ -247,13 +238,5 @@ input:-webkit-autofill:active {
      section's padding and the header above it. */
   .esm_v4-side:first-child > .esm_v4-panel:nth-child(n + 2) {
     padding-top: 4rem;
-  }
-}
-
-/* `.padding-global` narrows on phones, so the hero video's inset follows it. */
-@media screen and (max-width: 767px) {
-  .hero_v4-bg {
-    margin-right: 1.25rem;
-    margin-left: 1.25rem;
   }
 }
