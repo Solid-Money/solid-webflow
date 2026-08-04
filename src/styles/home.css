@@ -117,6 +117,23 @@ input:-webkit-autofill:active {
    the track and slides are sized to their content here instead. */
 .section_partner-v4 .swiper.is-partner {
   overflow: hidden;
+  /* A fixed inset rather than the shared rule's 10%, which grew with the
+     viewport — 144px of fade on a 1440 screen. Both edges are written from the
+     same measurement so they cannot drift apart. */
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 4rem,
+    #000 calc(100% - 4rem),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 4rem,
+    #000 calc(100% - 4rem),
+    transparent 100%
+  );
 }
 
 .section_partner-v4 .swiper-wrapper.is-partner {
