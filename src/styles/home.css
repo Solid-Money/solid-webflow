@@ -22,3 +22,256 @@ input:-webkit-autofill:active {
 .swiper-wrapper.is-partner {
   animation: 20s swiperSlide infinite linear;
 }
+
+/* ==========================================================================
+   Home v4
+   ========================================================================== */
+
+/* Earn. Spend. Move — the phone illustration stays pinned in the centre column
+   while the side columns scroll, and cross-fades between screens. */
+.esm_v4-phone-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.esm_v4-screen {
+  transition: opacity 0.5s ease;
+}
+
+/* Neobank carousel — Swiper renders the pagination bullets into the
+   Webflow-authored `.neobank_v4-dots` container and toggles
+   `swiper-button-disabled` on the Webflow-authored arrows at runtime. These
+   rules style that library-generated output; the static navigation layout and
+   colours live in Webflow. */
+.neobank_v4-navbtn.swiper-button-disabled {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.neobank_v4-dots .swiper-pagination-bullet {
+  width: 8px;
+  height: 8px;
+  border-radius: 100px;
+  background-color: var(--base-color-neutral--neutral);
+  opacity: 1;
+  transition: background-color 0.3s ease;
+}
+
+.neobank_v4-dots .swiper-pagination-bullet-active {
+  background-color: var(--base-color-neutral--white);
+}
+
+/* The stat numbers are painted with a gradient clipped to the glyphs. Webflow
+   writes the unprefixed `background-clip: text`; Safari before 18.4 only honours
+   the prefixed form, and without it the gradient fills the whole box behind
+   text that `-webkit-text-fill-color` has already made transparent. */
+.feature_v4-stat-num {
+  -webkit-background-clip: text;
+}
+
+/* Same reason as above: Safari needs the prefixed backdrop-filter, and without
+   it the hero QR panel falls back to a flat translucent card with no blur. */
+.hero_v4-qr-glass {
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Earn/Spend/Move — logo & flag marquee rows. The row markup (a track holding a
+   duplicated icon set) is authored with Webflow elements; these rules add the
+   infinite horizontal scroll and the black edge fade that Webflow can't express
+   on its own. The Earn crypto-token row is intentionally static — it has no
+   `.esm_v4-logos-track`, matching the design (no marquee). */
+@keyframes marqueeLoop {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.esm_v4-logos {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 12%,
+    black 88%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%);
+}
+
+.esm_v4-logos-track {
+  animation: marqueeLoop 5s linear infinite;
+}
+
+/* The oval that fades the bottom of the hero media into the black beneath it,
+   so the two sections meet without a seam. It lives here rather than in the
+   Designer because Webflow's gradient model has no two-radius ellipse: opening
+   the panel rewrote it to `circle farthest-corner at 150% 65% 50% 106%`, which
+   is not valid CSS, and the fade silently stopped rendering.
+
+   The centre sits just below the box so the solid part of the gradient runs
+   past the bottom edge rather than only reaching it — at the bottom corners the
+   gradient is still inside the opaque stop. */
+.hero_v4-bg-overlay {
+  background-image: radial-gradient(
+    ellipse 150% 65% at 50% 106%,
+    #000 0%,
+    #000 42%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
+
+/* Partners & Backers marquee. The Designer holds one row of logos and
+   `initPartnerMarquee` clones it, so the loop shifts by half the track rather
+   than all of it — the second half is what takes over as the first leaves.
+   Everything is scoped to the v4 section: `.swiper.is-partner` and its children
+   are shared with the existing home page, which keeps its own hand-duplicated
+   markup and its own `-100%` loop.
+
+   Swiper's stylesheet sizes slides to fill their container, which is what had
+   the two rows sitting on top of each other rather than running end to end, so
+   the track and slides are sized to their content here instead. */
+.section_partner-v4 .swiper.is-partner {
+  overflow: hidden;
+  /* A fixed inset rather than the shared rule's 10%, which grew with the
+     viewport — 144px of fade on a 1440 screen. Both edges are written from the
+     same measurement so they cannot drift apart. */
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 4rem,
+    #000 calc(100% - 4rem),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 4rem,
+    #000 calc(100% - 4rem),
+    transparent 100%
+  );
+}
+
+.section_partner-v4 .swiper-wrapper.is-partner {
+  width: max-content;
+  animation: marqueeLoop 40s linear infinite;
+}
+
+.section_partner-v4 .swiper-slide.is-partner {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+/* Pause the marquees for visitors who prefer reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  .esm_v4-logos-track,
+  .section_partner-v4 .swiper-wrapper.is-partner {
+    animation: none;
+  }
+}
+
+/* ==========================================================================
+   Home v4 — tablet and phone
+   Sizing and spacing for these breakpoints lives in the Designer. What is here
+   are the two reflows Webflow has no controls for, both of which need
+   `display: contents` and `order`: the feature row resequencing and the
+   Earn/Spend/Move columns interleaving.
+   ========================================================================== */
+@media screen and (max-width: 991px) {
+  /* Feature — the two stats sit side by side, then each account block takes a
+     full row. Flattening the columns is what lets a stat and an account from
+     opposite columns be resequenced independently. */
+  .feature_v4-col {
+    display: contents;
+  }
+
+  /* The columns it separates are stacked here, so it has nothing to divide. */
+  .feature_v4-divider {
+    display: none;
+  }
+
+  .feature_v4-stat {
+    order: 1;
+    flex: 1 1 8rem;
+  }
+
+  .feature_v4-acct {
+    order: 2;
+    flex: 1 1 100%;
+  }
+
+  /* Earn/Spend/Move — desktop reads as three columns (panels | phone |
+     bullets); stacked it has to read as three sub-sections, each
+     panel → phone → bullets. Flattening every wrapper makes those nine blocks
+     siblings of one column, which is the only way `order` can pair them up. */
+  .esm_v4-scroller {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .esm_v4-side,
+  .esm_v4-mid,
+  .esm_v4-phone-sticky,
+  .esm_v4-screens {
+    display: contents;
+  }
+
+  .esm_v4-panel,
+  .esm_v4-bullets {
+    min-height: auto;
+  }
+
+  /* All three screens are on the page at once now, so none of them fade. */
+  .esm_v4-screen {
+    width: 20rem;
+    max-width: 100%;
+    margin-right: auto;
+    margin-left: auto;
+    opacity: 1;
+  }
+
+  .esm_v4-side:first-child > .esm_v4-panel:nth-child(1) {
+    order: 1;
+  }
+
+  .esm_v4-mid .esm_v4-screen:nth-child(1) {
+    order: 2;
+  }
+
+  .esm_v4-side:last-child > .esm_v4-bullets:nth-child(1) {
+    order: 3;
+  }
+
+  .esm_v4-side:first-child > .esm_v4-panel:nth-child(2) {
+    order: 4;
+  }
+
+  .esm_v4-mid .esm_v4-screen:nth-child(2) {
+    order: 5;
+  }
+
+  .esm_v4-side:last-child > .esm_v4-bullets:nth-child(2) {
+    order: 6;
+  }
+
+  .esm_v4-side:first-child > .esm_v4-panel:nth-child(3) {
+    order: 7;
+  }
+
+  .esm_v4-mid .esm_v4-screen:nth-child(3) {
+    order: 8;
+  }
+
+  .esm_v4-side:last-child > .esm_v4-bullets:nth-child(3) {
+    order: 9;
+  }
+
+  /* Every sub-section after the first opens against the previous one's bullets,
+     so it needs its own separation. The first one already sits under the
+     section's padding and the header above it. */
+  .esm_v4-side:first-child > .esm_v4-panel:nth-child(n + 2) {
+    padding-top: 4rem;
+  }
+}

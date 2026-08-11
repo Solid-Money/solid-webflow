@@ -1,12 +1,15 @@
 import 'tippy.js/dist/tippy.css';
 import 'tippy.js/themes/light.css';
 import 'tippy.js/animations/scale.css';
+import 'swiper/css';
 
 import { getFormFieldValue } from '@finsweet/ts-utils';
 import { BASE_URL, safeExecute } from '@utils/helpers';
 import type { ApyAsset, APYs, JoinWaitlistBody, LandingApyOverride } from '@utils/types';
 import gsap from 'gsap';
 import { ScrollTrigger, SplitText } from 'gsap/all';
+import Swiper from 'swiper';
+import { Navigation, Pagination } from 'swiper/modules';
 import tippy from 'tippy.js';
 
 function initGsap() {
@@ -138,13 +141,32 @@ async function fetchApyOverride(): Promise<LandingApyOverride | null> {
   }
 }
 
+/**
+ * Both APY consumers on this page hit the same two endpoints, so the responses
+ * are shared rather than fetched once per consumer.
+ */
+let apyOverrideRequest: Promise<LandingApyOverride | null> | undefined;
+let apysRequest: Promise<APYs> | undefined;
+
+function getApyOverride() {
+  apyOverrideRequest ??= fetchApyOverride();
+  return apyOverrideRequest;
+}
+
+function getApys() {
+  apysRequest ??= fetch(`${BASE_URL.analytics}/analytics/v1/bigquery-metrics/apys`).then(
+    (response) => response.json() as Promise<APYs>
+  );
+  return apysRequest;
+}
+
 async function fetchTotalApy(selector: string) {
   const apyElements = document.querySelectorAll(selector) as NodeListOf<HTMLElement>;
   if (!apyElements.length) return;
 
   // An admin-managed override (set via the management portal) takes precedence
   // over the auto-computed APY when enabled.
-  const override = await fetchApyOverride();
+  const override = await getApyOverride();
   if (override?.overrideEnabled) {
     if (override.mode === 'simple') {
       // Broadcast the single managed value to every APY element, shown exactly
@@ -168,14 +190,54 @@ async function fetchTotalApy(selector: string) {
     return;
   }
 
-  const response = await fetch(`${BASE_URL.analytics}/analytics/v1/bigquery-metrics/apys`);
-  const data = (await response.json()) as APYs;
+  const data = await getApys();
 
   apyElements.forEach((element) => {
     const apyKey = element.dataset.apy;
     if (apyKey && apyKey in data) {
       element.innerHTML = `${data[apyKey as keyof APYs].toFixed(2)}%`;
     }
+  });
+}
+
+/**
+ * Home v4 — the Earn token chips. Each carries `data-token-apy` naming its
+ * asset, and resolves against the same admin override the rest of the page
+ * uses: a simple override goes on every chip, an advanced one is read per
+ * asset, and anything the override does not carry (today that includes USDT,
+ * which the override payload has no key for) falls back to the live all-time
+ * figure. Unlike `[data-apy]` these always render their own `%`, so the chip
+ * reads the same whichever branch supplied the number. On failure the chips
+ * keep whatever was authored in the Designer.
+ */
+async function renderTokenApys(selector: string) {
+  const elements = document.querySelectorAll<HTMLElement>(selector);
+  if (!elements.length) return;
+
+  const override = await getApyOverride();
+
+  if (override?.overrideEnabled && override.mode === 'simple') {
+    elements.forEach((element) => {
+      element.innerHTML = `${override.apy}%`;
+    });
+    return;
+  }
+
+  // `apys` is keyed by the assets the override knows about; a chip may name one
+  // it does not, hence the widened lookup rather than an ApyAsset index.
+  const managed = override?.overrideEnabled
+    ? (override.apys as Partial<Record<string, APYs>> | undefined)
+    : undefined;
+
+  const assets = [...elements].map((element) => element.dataset.tokenApy ?? '');
+  const total = assets.every((asset) => typeof managed?.[asset]?.allTime === 'number')
+    ? undefined
+    : (await getApys()).allTime;
+
+  elements.forEach((element, index) => {
+    const value = managed?.[assets[index]]?.allTime;
+    if (typeof value === 'number') element.innerHTML = `${value}%`;
+    else if (typeof total === 'number') element.innerHTML = `${total.toFixed(2)}%`;
   });
 }
 
@@ -385,6 +447,229 @@ function toggleDetail(selector: string) {
   handleDetailToggle(0, false, false);
 }
 
+/**
+ * Home v4 — hero background video. The `<mux-background-video>` element lives in
+ * a Webflow embed and holds its Mux stream in `data-src`, so nothing is fetched
+ * until we decide it should be: visitors who ask for reduced motion or who are
+ * on a metered connection keep the Mux thumbnail poster instead.
+ *
+ * The element renders its `<video>` on top of the slotted poster, and that video
+ * paints opaque as soon as it has a source — so it is held at `opacity: 0` and
+ * faded in on the first decoded frame. Any failure to play therefore leaves the
+ * poster on screen rather than a black hero. The rendition is capped to the
+ * viewport and playback pauses once the hero scrolls out of view.
+ */
+type MuxBackgroundVideoElement = HTMLElement & { video?: HTMLVideoElement | null };
+
+const HERO_VIDEO_MOBILE_BREAKPOINT = 768;
+
+function initHeroBackgroundVideo(selector: string) {
+  const element = document.querySelector<MuxBackgroundVideoElement>(selector);
+  const source = element?.dataset.src;
+  if (!element || !source) return;
+
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const savesData = Boolean(
+    (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData
+  );
+  if (prefersReducedMotion || savesData) return;
+
+  const observer =
+    'IntersectionObserver' in window
+      ? new IntersectionObserver(([entry]) => {
+          const { video } = element;
+          if (!video) return;
+
+          if (entry.isIntersecting) video.play().catch(() => undefined);
+          else video.pause();
+        })
+      : undefined;
+
+  customElements.whenDefined('mux-background-video').then(() => {
+    const { video } = element;
+
+    if (video) {
+      video.style.opacity = '0';
+      video.style.transition = 'opacity 0.6s ease';
+
+      const revealVideo = () => {
+        video.style.opacity = '1';
+      };
+
+      if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) revealVideo();
+      else video.addEventListener('loadeddata', revealVideo, { once: true });
+    }
+
+    element.setAttribute(
+      'max-resolution',
+      window.innerWidth < HERO_VIDEO_MOBILE_BREAKPOINT ? '720p' : '1080p'
+    );
+    element.setAttribute('src', source);
+
+    observer?.observe(element);
+  });
+}
+
+/** Below this the Earn/Spend/Move columns stack, one screen per sub-section. */
+const ESM_CROSSFADE_MIN_WIDTH = 992;
+
+/**
+ * Home v4 — Earn. Spend. Move.
+ * A single phone illustration is sticky-pinned in the centre column while the
+ * left/right columns scroll. As each sub-section scrolls through the viewport
+ * centre, the corresponding phone screen is cross-faded in (via the `is-active`
+ * class, animated by the CSS opacity transition). The phone therefore appears
+ * to "fly" across the three sub-sections, switching screens as it goes.
+ */
+function initStickyPhone(sectionSelector: string) {
+  const section = document.querySelector(sectionSelector);
+  if (!section) return;
+
+  const screens = gsap.utils.toArray<HTMLElement>('.esm_v4-screen', section);
+  const panels = gsap.utils.toArray<HTMLElement>('.esm_v4-panel', section);
+  if (!screens.length || panels.length !== screens.length) return;
+
+  // Below the desktop breakpoint the three screens are laid out one per
+  // sub-section and all visible at once, so there is nothing to cross-fade.
+  gsap.matchMedia().add(`(min-width: ${ESM_CROSSFADE_MIN_WIDTH}px)`, () => {
+    const setActiveScreen = (index: number) => {
+      screens.forEach((screen, i) => {
+        screen.classList.toggle('is-active', i === index);
+      });
+    };
+
+    panels.forEach((panel, index) => {
+      ScrollTrigger.create({
+        trigger: panel,
+        start: 'top center',
+        end: 'bottom center',
+        scrub: false,
+        onEnter: () => setActiveScreen(index),
+        onEnterBack: () => setActiveScreen(index),
+      });
+    });
+
+    setActiveScreen(0);
+  });
+}
+
+/**
+ * Home v4 — neobank feature carousel. Initialises Swiper on the Webflow-authored
+ * slider (3.5 slides in view) and wires it to the Webflow-authored navigation
+ * arrows (`.neobank_v4-navbtn.is-prev` / `.is-next`) and pagination container
+ * (`.neobank_v4-dots`). No DOM is created here — the markup lives in Webflow.
+ * Swiper toggles `swiper-button-disabled` on an arrow when there is no slide in
+ * that direction and renders the pagination bullets into the dots container
+ * (both runtime hooks are styled in home.css).
+ */
+function initNeobankSwiper(selector: string) {
+  const element = document.querySelector<HTMLElement>(selector);
+  if (!element || element.dataset.swiperReady) return;
+  element.dataset.swiperReady = 'true';
+
+  const scope = element.closest<HTMLElement>('.section_neobank-v4') ?? document;
+  const prevEl = scope.querySelector<HTMLElement>('.neobank_v4-navbtn.is-prev');
+  const nextEl = scope.querySelector<HTMLElement>('.neobank_v4-navbtn.is-next');
+  const dotsEl = scope.querySelector<HTMLElement>('.neobank_v4-dots');
+
+  new Swiper(element, {
+    modules: [Navigation, Pagination],
+    slidesPerView: 1.15,
+    spaceBetween: 16,
+    grabCursor: true,
+    watchOverflow: true,
+    navigation: prevEl && nextEl ? { prevEl, nextEl } : undefined,
+    pagination: dotsEl ? { el: dotsEl, clickable: true } : undefined,
+    breakpoints: {
+      480: { slidesPerView: 2.2, spaceBetween: 20 },
+      768: { slidesPerView: 2.5, spaceBetween: 24 },
+      992: { slidesPerView: 3, spaceBetween: 24 },
+    },
+  });
+}
+
+/**
+ * Home v4 — "Get the app" / "Join now" / "Get started" buttons open the existing
+ * modal. Openers are marked with `data-app-modal="open"`; the modal is revealed
+ * by setting its display and closed via the backdrop, close buttons, or the
+ * Escape key.
+ */
+function initAppModal(openSelector: string) {
+  const modal = document.querySelector<HTMLElement>('.modal');
+  const openers = document.querySelectorAll<HTMLElement>(openSelector);
+  if (!modal || !openers.length) return;
+
+  const openModal = () => {
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  };
+  const closeModal = () => {
+    modal.style.display = '';
+    document.body.style.overflow = '';
+  };
+
+  openers.forEach((opener) => {
+    opener.addEventListener('click', (event) => {
+      event.preventDefault();
+      openModal();
+    });
+  });
+
+  const background = modal.querySelector('.modal_background');
+  background?.addEventListener('click', closeModal);
+
+  modal
+    .querySelectorAll('[data-app-modal="close"], .modal_close, .modal-close')
+    .forEach((closer) => closer.addEventListener('click', closeModal));
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') closeModal();
+  });
+}
+
+/** Pixels per second the partner logos travel, held constant across viewports. */
+const PARTNER_MARQUEE_SPEED = 60;
+
+/**
+ * Home v4 — Partners & Backers marquee. The Designer holds a single row of
+ * logos; duplicating it there is what had two tracks fighting for the same
+ * space. Instead the row is cloned here until one half of the track outruns the
+ * viewport, then cloned once more so the track is two identical halves — which
+ * is what lets the CSS loop shift by exactly 50% and hand over seamlessly.
+ *
+ * Duration is derived rather than fixed, so a wider track scrolls for longer
+ * instead of faster and the logos move at the same speed on every screen.
+ */
+function initPartnerMarquee(selector: string) {
+  const track = document.querySelector<HTMLElement>(selector);
+  if (!track) return;
+
+  const originals = [...track.children].map((slide) => slide.cloneNode(true));
+  if (!originals.length) return;
+
+  const build = () => {
+    const setWidth = [...track.children]
+      .slice(0, originals.length)
+      .reduce((total, slide) => total + slide.getBoundingClientRect().width, 0);
+    // Zero until the logos have loaded; `load` below re-runs this.
+    if (!setWidth) return;
+
+    const setsPerHalf = Math.max(1, Math.ceil(window.innerWidth / setWidth));
+    if (track.children.length === originals.length * setsPerHalf * 2) return;
+
+    track.replaceChildren(
+      ...Array.from({ length: setsPerHalf * 2 }, () =>
+        originals.map((slide) => slide.cloneNode(true))
+      ).flat()
+    );
+    track.style.animationDuration = `${(setWidth * setsPerHalf) / PARTNER_MARQUEE_SPEED}s`;
+  };
+
+  build();
+  window.addEventListener('load', build);
+  window.addEventListener('resize', build);
+}
+
 window.Webflow ||= [];
 window.Webflow.push(() => {
   safeExecute(initGsap);
@@ -395,4 +680,11 @@ window.Webflow.push(() => {
   safeExecute(initTippy);
   safeExecute(toggleDetail, 'earn');
   safeExecute(toggleDetail, 'wallet');
+  // Home v4
+  safeExecute(initHeroBackgroundVideo, '.hero_v4-bg-video-el');
+  safeExecute(renderTokenApys, '[data-token-apy]');
+  safeExecute(initStickyPhone, '.section_esm-v4');
+  safeExecute(initNeobankSwiper, '.neobank_v4-swiper');
+  safeExecute(initAppModal, '[data-app-modal="open"]');
+  safeExecute(initPartnerMarquee, '.section_partner-v4 .swiper-wrapper.is-partner');
 });
