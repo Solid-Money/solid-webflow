@@ -15,4 +15,5 @@ export const BASE_URL = {
   waitlist: isProduction ? 'https://waitlist.solid.xyz' : 'https://waitlist-qa.solid.xyz',
   analytics: isProduction ? 'https://analytics.solid.xyz' : 'https://analytics-qa.solid.xyz',
   accounts: isProduction ? 'https://accounts.solid.xyz' : 'https://accounts-qa.solid.xyz',
+  app: isProduction ? 'https://app.solid.xyz' : 'https://app-qa.solid.xyz',
 };
