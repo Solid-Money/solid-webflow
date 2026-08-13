@@ -23,3 +23,21 @@
     rgba(0, 0, 0, 0) 100%
   );
 }
+
+/* The "5%" cashback figure is painted with a gradient clipped to the glyphs.
+   The Designer holds the flat brand green, which is what shows if any part of
+   this fails, so the number is never invisible — the gradient only replaces it
+   once the browser confirms it can clip a background to text.
+
+   Safari before 18.4 honours only the prefixed `-webkit-background-clip`, and
+   without it the gradient fills the whole box behind glyphs that
+   `-webkit-text-fill-color` has already made transparent — the same trap as
+   `.feature_v4-stat-num` on the home page. */
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .refer_usp-stat-value {
+    background-image: linear-gradient(180deg, #94f27f, rgba(148, 242, 127, 0.8));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+}
