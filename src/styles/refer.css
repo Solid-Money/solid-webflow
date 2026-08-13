@@ -1,0 +1,25 @@
+/* ==========================================================================
+   Refer
+   ========================================================================== */
+
+/* The oval that fades the bottom of the hero card into the black beneath it, so
+   the hero and the card section below it meet without a seam. Same reason it
+   lives here as the home hero's `.hero_v4-bg-overlay`: Webflow's gradient model
+   has no two-radius ellipse, and opening the gradient panel rewrites it to
+   `circle farthest-corner at ...`, which is not valid CSS — the fade then
+   silently stops rendering.
+
+   The centre sits on the bottom edge with a vertical radius taller than the
+   half-height, so the solid stop reaches roughly four fifths of the way up the
+   box while the corners stay only partly covered. That is what keeps the fade
+   reading as an oval pooled under the card rather than a flat band across it.
+   Both radii are percentages of the box, so the shape holds at every viewport
+   width rather than drifting as the section grows. */
+.refer_hero-fade {
+  background-image: radial-gradient(
+    ellipse 140% 78% at 50% 100%,
+    #000 0%,
+    #000 46%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
