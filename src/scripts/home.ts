@@ -670,6 +670,86 @@ function initPartnerMarquee(selector: string) {
   window.addEventListener('resize', build);
 }
 
+/** Pixels per second the review cards travel, held constant across viewports. */
+const TESTIMONIAL_MARQUEE_SPEED = 45;
+
+/**
+ * Home v4 — testimonial carousel. Two rows of CMS-driven review cards drift in
+ * opposite directions; each track names its own via
+ * `data-testimonial-direction`, so the rows read as one field of cards moving
+ * past rather than two copies of the same loop.
+ *
+ * The Designer holds one Collection List per row, so a track starts only as wide
+ * as the collection. Each row is cloned here until one half outruns the
+ * viewport, then cloned once more so the track is two identical halves — which
+ * is what lets the tween shift by exactly 50% and hand over seamlessly.
+ *
+ * Card spacing is a margin on the card rather than a gap on the track, so the
+ * distance between the halves matches the distance inside them. With a gap the
+ * two would differ by half a gap and the loop would jump on every hand-over.
+ *
+ * Duration is derived from the measured width rather than fixed, so a wider
+ * track scrolls for longer instead of faster and the cards move at the same
+ * speed on every screen.
+ */
+function initTestimonialMarquee(selector: string) {
+  const tracks = document.querySelectorAll<HTMLElement>(selector);
+  if (!tracks.length) return;
+
+  // Left static rather than paused: the cloning below only exists to feed the
+  // animation, so without one there is nothing to clone.
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  tracks.forEach((track) => {
+    const originals = [...track.children].map((card) => card.cloneNode(true));
+    if (!originals.length) return;
+
+    const isReversed = track.dataset.testimonialDirection === 'right';
+    let tween: gsap.core.Tween | undefined;
+
+    const build = () => {
+      const setWidth = [...track.children].slice(0, originals.length).reduce(
+        (total, card) =>
+          total +
+          card.getBoundingClientRect().width +
+          // The spacing lives in the card's margin, which the rect excludes.
+          parseFloat(window.getComputedStyle(card).marginRight),
+        0
+      );
+      // Zero until the cards have laid out; `load` below re-runs this.
+      if (!setWidth) return;
+
+      const setsPerHalf = Math.max(1, Math.ceil(window.innerWidth / setWidth));
+
+      if (track.children.length !== originals.length * setsPerHalf * 2) {
+        track.replaceChildren(
+          ...Array.from({ length: setsPerHalf * 2 }, () =>
+            originals.map((card) => card.cloneNode(true))
+          ).flat()
+        );
+      }
+
+      // Both ends of the travel show the same content, so whichever way the row
+      // runs it restarts on an identical frame.
+      tween?.kill();
+      tween = gsap.fromTo(
+        track,
+        { xPercent: isReversed ? -50 : 0 },
+        {
+          xPercent: isReversed ? 0 : -50,
+          duration: (setWidth * setsPerHalf) / TESTIMONIAL_MARQUEE_SPEED,
+          ease: 'none',
+          repeat: -1,
+        }
+      );
+    };
+
+    build();
+    window.addEventListener('load', build);
+    window.addEventListener('resize', build);
+  });
+}
+
 window.Webflow ||= [];
 window.Webflow.push(() => {
   safeExecute(initGsap);
@@ -687,4 +767,5 @@ window.Webflow.push(() => {
   safeExecute(initNeobankSwiper, '.neobank_v4-swiper');
   safeExecute(initAppModal, '[data-app-modal="open"]');
   safeExecute(initPartnerMarquee, '.section_partner-v4 .swiper-wrapper.is-partner');
+  safeExecute(initTestimonialMarquee, '.testimonial_v4-track');
 });
