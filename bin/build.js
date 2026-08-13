@@ -21,6 +21,7 @@ const STYLES = [
   'home.css',
   'invite.css',
   'main.css',
+  'refer.css',
 ];
 
 const ENTRY_POINTS = [
