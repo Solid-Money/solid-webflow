@@ -1,41 +1,39 @@
 import { isAndroid, isIos } from '@braintree/browser-detection';
+import { initAppModal } from '@utils/app-modal';
 import { BASE_URL, safeExecute } from '@utils/helpers';
 import type { ReferralInvite, ReferralInviteOffer } from '@utils/types';
 import qrcode from 'qrcode-generator';
 
 /**
  * Refer page — `www.solid.xyz/refer?ref=CODE`, the referral link the app has
- * always shared. When the visitor arrives with a code, this hands the invite
- * on to the app:
+ * always shared. "Get the app" beside "Sign up now" opens the same download
+ * modal as Home — a QR code and the store buttons (see `initAppModal`). When
+ * the visitor arrives with a code, this hands the invite on to the app:
  *
  * - The code is looked up on the public invite endpoint and, when it is valid,
  *   a banner names who invited them and what they get.
- * - Desktop shows a QR code for the app share link, `app.solid.xyz/invite/CODE`,
- *   so the invite can be carried over to a phone.
- * - Mobile gets an "Open in the Solid app" link to that same share link. It is
- *   a universal / app link, so it opens the app when installed and the web
- *   invite page otherwise.
- * - Store links carry the code into a fresh install: Google Play links get it
- *   in the install referrer, and tapping an App Store link on mobile first
- *   copies `solid-invite:CODE` to the clipboard for the app to read on first
- *   launch. Links into the web app get `ref=CODE`, whichever of the accepted
- *   query params the code arrived in.
+ * - The modal carries the invite. On desktop its QR code is swapped for one of
+ *   the app share link, `app.solid.xyz/invite/CODE`, so the invite can be
+ *   carried over to a phone. On a phone, where there is nothing to scan, the
+ *   QR code gives way to an "Open in the Solid app" link to that same share
+ *   link — a universal / app link, so it opens the app when installed and the
+ *   web invite page otherwise. Either way the code is shown under it.
+ * - Store links carry the code into a fresh install, the modal's included:
+ *   Google Play links get it in the install referrer, and tapping an App Store
+ *   link on mobile first copies `solid-invite:CODE` to the clipboard for the
+ *   app to read on first launch. Links into the web app get `ref=CODE`,
+ *   whichever of the accepted query params the code arrived in.
  *
- * Visitors without a code get the page exactly as authored: nothing is
- * injected or rewritten. A code the endpoint reports as unknown keeps the page
- * generic too; when the endpoint cannot be reached the code is trusted, since
- * it came from a share link, and only the banner is left out.
+ * Visitors without a code get the page exactly as authored, the modal as on
+ * Home: nothing is injected or rewritten. A code the endpoint reports as
+ * unknown keeps the page generic too; when the endpoint cannot be reached the
+ * code is trusted, since it came from a share link, and only the banner is
+ * left out.
  *
- * Optional Designer hooks — add an empty Div Block with one of these custom
- * attributes to choose where the injected UI goes. Each is left collapsed until
- * it is filled (see refer.css), so it costs no space on a page without a code.
- *
- * - `data-refer-slot="invite"` — the "<username> invited you" banner.
- *   Default: straight after the page's first `h1`.
- * - `data-refer-slot="qr"` — the desktop QR card.
- *   Default: after `.refer_hero-buttons`, else after the banner.
- * - `data-refer-slot="open-app"` — the mobile "Open in the Solid app" link.
- *   Default: as the QR card.
+ * Optional Designer hook — an empty Div Block with `data-refer-slot="invite"`
+ * chooses where the "<username> invited you" banner goes (default: straight
+ * after the page's first `h1`). It stays collapsed until it is filled (see
+ * refer.css), so it costs no space on a page without a code.
  */
 
 /** Query params a referral code may arrive in, in order of preference. */
@@ -55,6 +53,8 @@ const APP_HOSTS = ['app.solid.xyz', 'app-qa.solid.xyz'];
 
 /** Marks the page once handled, so embedding the script twice does nothing twice. */
 const INIT_ATTRIBUTE = 'data-refer-invite';
+/** Marks the download modal once it carries the invite. */
+const MODAL_ATTRIBUTE = 'data-refer-invite-modal';
 
 /** Light modules around the code; four is the minimum scanners expect. */
 const QR_QUIET_ZONE = 4;
@@ -251,31 +251,52 @@ function createQrSvg(text: string): SVGSVGElement {
   return svg;
 }
 
-function createQrCard(shareUrl: string, code: string): HTMLElement {
-  const card = createElement('div', 'refer-invite_qr');
-
-  const frame = createElement('div', 'refer-invite_qr-code');
+function createInviteQr(shareUrl: string): HTMLElement {
+  const frame = createElement('div', 'refer-invite_modal-qr');
   frame.append(createQrSvg(shareUrl));
-
-  const body = createElement('div', 'refer-invite_qr-body');
-  const caption = createElement('p', 'refer-invite_qr-caption');
-  caption.append(
-    createElement('span', 'refer-invite_qr-label', 'Invite code'),
-    createElement('span', 'refer-invite_code', code)
-  );
-  body.append(
-    createElement('p', 'refer-invite_qr-title', 'Scan with your phone to get the app'),
-    caption
-  );
-
-  card.append(frame, body);
-  return card;
+  return frame;
 }
 
 function createOpenAppLink(shareUrl: string): HTMLAnchorElement {
   const link = createElement('a', 'refer-invite_open', 'Open in the Solid app');
   link.href = shareUrl;
   return link;
+}
+
+function createCodeCaption(code: string): HTMLElement {
+  const caption = createElement('p', 'refer-invite_qr-caption');
+  caption.append(
+    createElement('span', 'refer-invite_qr-label', 'Invite code'),
+    createElement('span', 'refer-invite_code', code)
+  );
+  return caption;
+}
+
+/**
+ * Puts the invite into the download modal: its QR code (`.app_qr`) becomes
+ * the app share link on desktop, or an "Open in the Solid app" link on a
+ * phone, with the code shown after the caption. Its store buttons need nothing
+ * here — the click handler covers them wherever they are.
+ */
+function personaliseAppModal(modal: HTMLElement, code: string, isMobile: boolean) {
+  if (modal.hasAttribute(MODAL_ATTRIBUTE)) return;
+
+  const qr = modal.querySelector('.app_qr');
+  if (!qr) return;
+  modal.setAttribute(MODAL_ATTRIBUTE, code);
+
+  const shareUrl = `${APP_ORIGIN}/invite/${code}`;
+  qr.replaceWith(isMobile ? createOpenAppLink(shareUrl) : createInviteQr(shareUrl));
+
+  // "Scan to download the app" — still true on desktop, of a different code;
+  // on a phone there is nothing left to scan.
+  const caption = modal.querySelector('.modal_body .description-lg');
+  if (caption) {
+    if (isMobile) caption.remove();
+    else caption.textContent = 'Scan with your phone to get the app';
+  }
+
+  modal.querySelector('.modal_body')?.append(createCodeCaption(code));
 }
 
 /**
@@ -296,22 +317,20 @@ function place(node: HTMLElement, slot: string, fallbacks: Array<Element | null>
   return true;
 }
 
-function renderInvite(lookup: InviteLookup, code: string, isMobile: boolean) {
+function renderInvite(
+  lookup: InviteLookup,
+  code: string,
+  isMobile: boolean,
+  modal: HTMLElement | null
+) {
   // A code the backend does not know would only lead to an "invalid invite"
   // screen, so the page stays generic.
   if (lookup.status === 'invalid') return;
 
-  const heading = document.querySelector('h1');
-
   const banner = lookup.status === 'valid' ? createInviteBanner(lookup.invite) : null;
-  const bannerPlaced = banner ? place(banner, 'invite', [heading]) : false;
+  if (banner) place(banner, 'invite', [document.querySelector('h1')]);
 
-  const shareUrl = `${APP_ORIGIN}/invite/${code}`;
-  place(
-    isMobile ? createOpenAppLink(shareUrl) : createQrCard(shareUrl, code),
-    isMobile ? 'open-app' : 'qr',
-    [document.querySelector('.refer_hero-buttons'), bannerPlaced ? banner : null, heading]
-  );
+  if (modal) personaliseAppModal(modal, code, isMobile);
 }
 
 /** Play hands `referrer` to the app on first launch (Install Referrer API). */
@@ -406,7 +425,7 @@ function handleStoreLinkClick(event: MouseEvent, code: string, isMobile: boolean
   copied.then(navigate, navigate);
 }
 
-function initReferInvite() {
+function initReferInvite(modal: HTMLElement | null) {
   const code = readInviteCode(window.location.search);
   if (!code) return;
 
@@ -428,10 +447,12 @@ function initReferInvite() {
     safeExecute(handleStoreLinkClick, event, code, isMobile)
   );
 
-  lookupInvite(code).then((lookup) => safeExecute(renderInvite, lookup, code, isMobile));
+  lookupInvite(code).then((lookup) => safeExecute(renderInvite, lookup, code, isMobile, modal));
 }
 
 window.Webflow ||= [];
 window.Webflow.push(() => {
-  safeExecute(initReferInvite);
+  // "Get the app" opens the download modal whether or not there is a code.
+  const modal = safeExecute(initAppModal) ?? null;
+  safeExecute(initReferInvite, modal);
 });

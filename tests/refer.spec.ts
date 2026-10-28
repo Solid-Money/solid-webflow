@@ -19,6 +19,9 @@ const PAGE_HTML = `<!doctype html>
   <head>
     <meta charset="utf-8" />
     <title>Refer</title>
+    <style>
+      .modal { display: none; }
+    </style>
     <script>window.Webflow = { push: (callback) => callback() };</script>
   </head>
   <body>
@@ -29,11 +32,28 @@ const PAGE_HTML = `<!doctype html>
         <p class="refer_hero-description">Sign up with Solid.</p>
         <div class="refer_hero-buttons">
           <a id="signup" href="https://app.solid.xyz?utm_source=website">Sign up now</a>
+          <a id="get-app" href="#" data-app-modal="open">Get the app</a>
         </div>
       </div>
     </section>
-    <a id="app-store" href="https://apps.apple.com/il/app/solid-superapp-llc/id6758618401">App Store</a>
-    <a id="play-store" href="https://play.google.com/store/apps/details?id=xyz.solid.android&hl=en">Google Play</a>
+    <div class="modal">
+      <div class="modal_background"></div>
+      <div class="modal_container">
+        <div class="modal_header">
+          <div>Download the app</div>
+          <a id="modal-close" href="#" class="modal_close">Close</a>
+        </div>
+        <div class="modal_body">
+          <img class="app_qr" alt="Solid app QR code" />
+          <div class="description-lg">Scan to download the app</div>
+        </div>
+        <div class="modal_footer">
+          <a id="app-store" href="https://apps.apple.com/il/app/solid-superapp-llc/id6758618401" target="_blank">App Store</a>
+          <a id="play-store" href="https://play.google.com/store/apps/details?id=xyz.solid.android&hl=en" target="_blank">Google Play</a>
+          <a id="app-store-same-tab" href="https://apps.apple.com/il/app/solid-superapp-llc/id6758618401">App Store</a>
+        </div>
+      </div>
+    </div>
     <script src="/refer.js"></script>
   </body>
 </html>`;
@@ -90,8 +110,9 @@ async function openReferPage(
     });
   }, clipboardMode);
 
-  // Later routes take precedence, so this catch-all only sees what nothing else claims.
-  await page.route('**/*', (route) => route.abort());
+  // Later routes take precedence, and page routes over context ones, so this
+  // catch-all only sees what nothing else claims — in this tab or a new one.
+  await page.context().route('**/*', (route) => route.abort());
   await page.route(
     (url) => url.hostname === 'www.solid.xyz' && url.pathname === '/refer',
     (route) => route.fulfill({ contentType: 'text/html', body: PAGE_HTML })
@@ -112,7 +133,8 @@ async function openReferPage(
       });
     }
   );
-  await page.route(
+  // On the context, so the store tabs the modal's links open are served too.
+  await page.context().route(
     (url) => url.hostname === 'apps.apple.com' || url.hostname === 'play.google.com',
     (route) => route.fulfill({ contentType: 'text/html', body: '<title>Store</title>' })
   );
@@ -125,8 +147,23 @@ async function searchParamsOf(page: Page, selector: string) {
   return new URL((await page.locator(selector).getAttribute('href')) ?? '').searchParams;
 }
 
+/** "Get the app", once the modal carries the invite (or never will). */
+async function openAppModal(page: Page) {
+  await page.click('#get-app');
+  await expect(page.locator('.modal')).toBeVisible();
+}
+
+/** Taps a store link that opens in a new tab, as the modal's do; returns that tab's URL. */
+async function openStoreTab(page: Page, selector: string) {
+  const [tab] = await Promise.all([page.waitForEvent('popup'), page.click(selector)]);
+  await tab.waitForURL(/^https:\/\/(apps\.apple|play\.google)\.com\//);
+  return tab.url();
+}
+
 test.describe('refer page on desktop', () => {
-  test('personalises the hero and shows a QR card for a valid v4 code', async ({ page }) => {
+  test('personalises the hero and puts the invite QR in the app modal for a valid v4 code', async ({
+    page,
+  }) => {
     const { lookups } = await openReferPage(page, '?ref=ab12c');
 
     const banner = page.locator('h1 + .refer-invite');
@@ -137,10 +174,13 @@ test.describe('refer page on desktop', () => {
     await expect(banner.locator('.refer-invite_avatar')).toHaveText('D');
     expect(lookups).toEqual(['/accounts/v1/referral/invite/AB12C']);
 
-    const card = page.locator('.refer_hero-buttons + .refer-invite_qr');
-    await expect(card).toBeVisible();
-    await expect(card.locator('svg[role="img"] path')).toHaveCount(1);
-    await expect(card.locator('.refer-invite_code')).toHaveText('AB12C');
+    await expect(page.locator('.modal')).toHaveAttribute('data-refer-invite-modal', 'AB12C');
+    await openAppModal(page);
+    const body = page.locator('.modal .modal_body');
+    await expect(body.locator('.refer-invite_modal-qr svg[role="img"] path')).toHaveCount(1);
+    await expect(body.locator('.app_qr')).toHaveCount(0);
+    await expect(body.locator('.description-lg')).toHaveText('Scan with your phone to get the app');
+    await expect(body.locator('.refer-invite_code')).toHaveText('AB12C');
     await expect(page.locator('.refer-invite_open')).toHaveCount(0);
 
     const play = await searchParamsOf(page, '#play-store');
@@ -171,6 +211,7 @@ test.describe('refer page on desktop', () => {
 
       await expect(page.locator('[class^="refer-invite"]')).toHaveCount(0);
       await expect(page.locator('html')).not.toHaveAttribute('data-refer-invite');
+      await expect(page.locator('.modal .app_qr')).toHaveCount(1);
       await expect(page.locator('#play-store')).toHaveAttribute(
         'href',
         'https://play.google.com/store/apps/details?id=xyz.solid.android&hl=en'
@@ -183,6 +224,19 @@ test.describe('refer page on desktop', () => {
     });
   }
 
+  test('opens and closes the app modal without a code', async ({ page }) => {
+    await openReferPage(page, '');
+
+    await openAppModal(page);
+    await expect(page.locator('.modal .app_qr')).toBeVisible();
+    await page.click('#modal-close');
+    await expect(page.locator('.modal')).toBeHidden();
+
+    await openAppModal(page);
+    await page.keyboard.press('Escape');
+    await expect(page.locator('.modal')).toBeHidden();
+  });
+
   test('keeps the page generic for a code the backend does not know', async ({ page }) => {
     const { lookups } = await openReferPage(page, '?ref=ab12c', {
       status: 200,
@@ -192,21 +246,24 @@ test.describe('refer page on desktop', () => {
     await expect.poll(() => lookups.length).toBe(1);
     await page.waitForTimeout(100);
     await expect(page.locator('[class^="refer-invite"]')).toHaveCount(0);
+    await expect(page.locator('.modal .app_qr')).toHaveCount(1);
   });
 
-  test('still shows the QR card when the lookup fails', async ({ page }) => {
+  test('still puts the invite QR in the modal when the lookup fails', async ({ page }) => {
     await openReferPage(page, '?ref=ab12c', { status: 500 });
 
-    await expect(page.locator('.refer-invite_qr')).toBeVisible();
+    await expect(page.locator('.modal')).toHaveAttribute('data-refer-invite-modal', 'AB12C');
+    await openAppModal(page);
+    await expect(page.locator('.refer-invite_modal-qr')).toBeVisible();
     await expect(page.locator('.refer-invite')).toHaveCount(0);
   });
 
   test('does not touch the clipboard on desktop', async ({ page }) => {
     const { clipboard } = await openReferPage(page, '?ref=ab12c');
-    await expect(page.locator('.refer-invite_qr')).toBeVisible();
+    await expect(page.locator('.modal')).toHaveAttribute('data-refer-invite-modal', 'AB12C');
+    await openAppModal(page);
 
-    await page.click('#app-store');
-    await page.waitForURL('https://apps.apple.com/**');
+    expect(await openStoreTab(page, '#app-store')).toContain('apps.apple.com');
     expect(clipboard).toEqual([]);
   });
 });
@@ -214,19 +271,34 @@ test.describe('refer page on desktop', () => {
 test.describe('refer page on iPhone', () => {
   test.use({ userAgent: IPHONE_UA, viewport: { width: 390, height: 844 } });
 
-  test('offers to open the app instead of a QR card', async ({ page }) => {
+  test('offers to open the app in the modal instead of a QR code', async ({ page }) => {
     await openReferPage(page, '?ref=ab12c');
 
-    const open = page.locator('.refer_hero-buttons + .refer-invite_open');
+    await expect(page.locator('.modal')).toHaveAttribute('data-refer-invite-modal', 'AB12C');
+    await openAppModal(page);
+    const body = page.locator('.modal .modal_body');
+    const open = body.locator('.refer-invite_open');
     await expect(open).toHaveText('Open in the Solid app');
     await expect(open).toHaveAttribute('href', 'https://app.solid.xyz/invite/AB12C');
-    await expect(page.locator('.refer-invite_qr')).toHaveCount(0);
+    await expect(body.locator('.refer-invite_code')).toHaveText('AB12C');
+    await expect(body.locator('.app_qr, .refer-invite_modal-qr, .description-lg')).toHaveCount(0);
   });
 
   test('copies the invite code before opening the App Store', async ({ page }) => {
     const { clipboard } = await openReferPage(page, '?ref=ab12c');
 
-    await page.click('#app-store');
+    await openAppModal(page);
+    expect(await openStoreTab(page, '#app-store')).toBe(
+      'https://apps.apple.com/il/app/solid-superapp-llc/id6758618401'
+    );
+    expect(clipboard).toEqual(['solid-invite:AB12C']);
+  });
+
+  test('waits for the copy before leaving for the App Store in the same tab', async ({ page }) => {
+    const { clipboard } = await openReferPage(page, '?ref=ab12c');
+
+    await openAppModal(page);
+    await page.click('#app-store-same-tab');
     await page.waitForURL('https://apps.apple.com/il/app/solid-superapp-llc/id6758618401');
     expect(clipboard).toEqual(['solid-invite:AB12C']);
   });
@@ -234,7 +306,8 @@ test.describe('refer page on iPhone', () => {
   test('opens the App Store even when the clipboard never answers', async ({ page }) => {
     const { clipboard } = await openReferPage(page, '?ref=ab12c', undefined, 'hang');
 
-    await page.click('#app-store');
+    await openAppModal(page);
+    await page.click('#app-store-same-tab');
     await page.waitForURL('https://apps.apple.com/**', { timeout: 3000 });
     expect(clipboard).toEqual(['solid-invite:AB12C']);
   });
@@ -246,7 +319,9 @@ test.describe('refer page on Android', () => {
   test('passes the code to Google Play and offers to open the app', async ({ page }) => {
     await openReferPage(page, '?refCode=ab12c');
 
-    await expect(page.locator('.refer-invite_open')).toHaveAttribute(
+    await expect(page.locator('.modal')).toHaveAttribute('data-refer-invite-modal', 'AB12C');
+    await openAppModal(page);
+    await expect(page.locator('.modal .refer-invite_open')).toHaveAttribute(
       'href',
       'https://app.solid.xyz/invite/AB12C'
     );

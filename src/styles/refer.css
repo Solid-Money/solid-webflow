@@ -23,7 +23,8 @@
 /* ==========================================================================
    Refer — invite
    Everything below is built by refer.ts, and only when the URL carries a
-   referral code, so none of it exists for a visitor without one.
+   referral code, so none of it exists for a visitor without one. The banner
+   goes under the hero heading; the rest goes into the "Get the app" modal.
    ========================================================================== */
 
 /* Optional `data-refer-slot` placeholders stay collapsed until refer.ts fills
@@ -44,16 +45,12 @@
   }
 }
 
-.refer-invite,
-.refer-invite_qr,
-.refer-invite_open {
+.refer-invite {
   animation: refer-invite-in 0.48s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .refer-invite,
-  .refer-invite_qr,
-  .refer-invite_open {
+  .refer-invite {
     animation: none;
   }
 }
@@ -116,54 +113,30 @@
   line-height: 1.4;
 }
 
-/* Desktop: the app share link as a QR code. The code draws its own white
+/* Desktop: the modal's QR code, swapped for one of the app share link and
+   sized like the one it replaces (`.app_qr`). The code draws its own white
    quiet zone; the frame only rounds it off. */
-.refer-invite_qr {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  max-width: 100%;
-  padding: 1rem 1.5rem 1rem 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
-  background-color: var(--base-color-neutral--neutral-darker, #1c1c1c);
-  text-align: left;
-}
-
-.refer-invite_qr-code {
-  flex: none;
-  width: 7.5rem;
-  height: 7.5rem;
+.refer-invite_modal-qr {
+  width: 70%;
+  max-width: 15rem;
+  aspect-ratio: 1;
   overflow: hidden;
   border-radius: 12px;
   background-color: #fff;
 }
 
-.refer-invite_qr-code svg {
+.refer-invite_modal-qr svg {
   display: block;
   width: 100%;
   height: 100%;
 }
 
-.refer-invite_qr-body {
-  display: flex;
-  flex-direction: column;
-  gap: 0.625rem;
-  max-width: 13rem;
-}
-
-.refer-invite_qr-title {
-  margin: 0;
-  color: #fff;
-  font-size: 1rem;
-  font-weight: 600;
-  line-height: 1.3;
-}
-
+/* "Invite code AB12C", under the modal's caption. */
 .refer-invite_qr-caption {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
   margin: 0;
   color: #acacac;
@@ -180,8 +153,9 @@
   letter-spacing: 0.06em;
 }
 
-/* Mobile: the app share link as a button. It is a universal / app link, so
-   it opens the app when installed and the web invite page otherwise. */
+/* Mobile: the app share link as a button, in place of the modal's QR code.
+   It is a universal / app link, so it opens the app when installed and the
+   web invite page otherwise. */
 .refer-invite_open {
   display: inline-flex;
   align-items: center;
