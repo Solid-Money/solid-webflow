@@ -4,6 +4,7 @@ import 'tippy.js/animations/scale.css';
 import 'swiper/css';
 
 import { getFormFieldValue } from '@finsweet/ts-utils';
+import { initAppModal } from '@utils/app-modal';
 import { BASE_URL, safeExecute } from '@utils/helpers';
 import type { ApyAsset, APYs, JoinWaitlistBody, LandingApyOverride } from '@utils/types';
 import gsap from 'gsap';
@@ -588,45 +589,6 @@ function initNeobankSwiper(selector: string) {
   });
 }
 
-/**
- * Home v4 — "Get the app" / "Join now" / "Get started" buttons open the existing
- * modal. Openers are marked with `data-app-modal="open"`; the modal is revealed
- * by setting its display and closed via the backdrop, close buttons, or the
- * Escape key.
- */
-function initAppModal(openSelector: string) {
-  const modal = document.querySelector<HTMLElement>('.modal');
-  const openers = document.querySelectorAll<HTMLElement>(openSelector);
-  if (!modal || !openers.length) return;
-
-  const openModal = () => {
-    modal.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-  };
-  const closeModal = () => {
-    modal.style.display = '';
-    document.body.style.overflow = '';
-  };
-
-  openers.forEach((opener) => {
-    opener.addEventListener('click', (event) => {
-      event.preventDefault();
-      openModal();
-    });
-  });
-
-  const background = modal.querySelector('.modal_background');
-  background?.addEventListener('click', closeModal);
-
-  modal
-    .querySelectorAll('[data-app-modal="close"], .modal_close, .modal-close')
-    .forEach((closer) => closer.addEventListener('click', closeModal));
-
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') closeModal();
-  });
-}
-
 /** Pixels per second the partner logos travel, held constant across viewports. */
 const PARTNER_MARQUEE_SPEED = 60;
 
@@ -765,6 +727,7 @@ window.Webflow.push(() => {
   safeExecute(renderTokenApys, '[data-token-apy]');
   safeExecute(initStickyPhone, '.section_esm-v4');
   safeExecute(initNeobankSwiper, '.neobank_v4-swiper');
+  // "Get the app" / "Join now" / "Get started" open the download modal.
   safeExecute(initAppModal, '[data-app-modal="open"]');
   safeExecute(initPartnerMarquee, '.section_partner-v4 .swiper-wrapper.is-partner');
   safeExecute(initTestimonialMarquee, '.testimonial_v4-track');
