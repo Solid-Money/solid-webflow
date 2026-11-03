@@ -14,6 +14,7 @@ const SCRIPTS = [
   'whats-new.ts',
   'main.ts',
   'app.ts',
+  'refer.ts',
 ];
 
 const STYLE_DIR = 'src/styles';
